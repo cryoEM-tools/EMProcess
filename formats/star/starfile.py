@@ -1,8 +1,36 @@
 import numpy as np
 
+particle_column_possibilities = np.array(
+    [
+        ["_rlnCoordinateX"],
+        ["_rlnCoordinateY"],
+        ["_rlnImageName"],
+        ["_rlnMicrographName"],
+        ["_rlnOpticsGroup"],
+        ["_rlnCtfMaxResolution"],
+        ["_rlnCtfFigureOfMerit"],
+        ["_rlnDefocusU"],
+        ["_rlnDefocusV"],
+        ["_rlnDefocusAngle"],
+        ["_rlnCtfBfactor"],
+        ["_rlnCtfScalefactor"],
+        ["_rlnPhaseShift"],
+        ["_rlnGroupNumber"],
+        ["_rlnAngleRot"],
+        ["_rlnAngleTilt"],
+        ["_rlnAnglePsi"],
+        ["_rlnOriginXAngst"],
+        ["_rlnOriginYAngst"],
+        ["_rlnClassNumber"],
+        ["_rlnNormCorrection"],
+        ["_rlnLogLikeliContribution"],
+        ["_rlnMaxValueProbDistribution"],
+        ["_rlnNrOfSignificantSamples"],
+        ["_rlnRandomSubset"]]).reshape(-1)
+
 def load_particles(filename):
     params = _load_particles_params(filename)
-    return particles_star(**params)
+    return Particles(**params)
 
 def _load_particles_params(filename):
     optics_columns = [
@@ -16,34 +44,6 @@ def _load_particles_params(filename):
         ['_rlnImagePixelSize', '#8'],
         ['_rlnImageSize', '#9'],
         ['_rlnImageDimensionality', '#10']]
-
-    particle_column_possibilities = np.array(
-        [
-            ["_rlnCoordinateX"],
-            ["_rlnCoordinateY"],
-            ["_rlnImageName"],
-            ["_rlnMicrographName"],
-            ["_rlnOpticsGroup"],
-            ["_rlnCtfMaxResolution"],
-            ["_rlnCtfFigureOfMerit"],
-            ["_rlnDefocusU"],
-            ["_rlnDefocusV"],
-            ["_rlnDefocusAngle"],
-            ["_rlnCtfBfactor"],
-            ["_rlnCtfScalefactor"],
-            ["_rlnPhaseShift"],
-            ["_rlnGroupNumber"],
-            ["_rlnAngleRot"],
-            ["_rlnAngleTilt"],
-            ["_rlnAnglePsi"],
-            ["_rlnOriginXAngst"],
-            ["_rlnOriginYAngst"],
-            ["_rlnClassNumber"],
-            ["_rlnNormCorrection"],
-            ["_rlnLogLikeliContribution"],
-            ["_rlnMaxValueProbDistribution"],
-            ["_rlnNrOfSignificantSamples"],
-            ["_rlnRandomSubset"]])
 
     optics_vars = np.array(
         [
@@ -117,7 +117,7 @@ def _load_particles_params(filename):
                 while ln.split() != [] :
                     data_optics.append(ln.split())
                     i += 1
-                    ln = data[i+1]
+                    ln = data[i]
             elif (ln.find("loop_") == 0) and pull_data_particles:
                 try:
                     observed_data_columns = data[n+1:n+26]
@@ -139,7 +139,7 @@ def _load_particles_params(filename):
                 while ln.split() != [] :
                     data_particles.append(ln.split())
                     i += 1
-                    ln = data[i+1]
+                    ln = data[i]
     data_particles = np.array(data_particles)
     data_optics = np.array(data_optics)
     params = {}
@@ -149,7 +149,34 @@ def _load_particles_params(filename):
         params[particle_vars[column_ids][n]] = data_particles[:,n]
     return params
 
-class particles_star:
+def _gen_data_optics_header():
+    header = "\n".join(
+        [
+            '# version 30001\n',
+            'data_optics\n',
+            'loop_',
+            '_rlnOpticsGroupName #1',
+            '_rlnOpticsGroup #2',
+            '_rlnMtfFileName #3',
+            '_rlnMicrographOriginalPixelSize #4',
+            '_rlnVoltage #5',
+            '_rlnSphericalAberration #6',
+            '_rlnAmplitudeContrast #7',
+            '_rlnImagePixelSize #8',
+            '_rlnImageSize #9',
+            '_rlnImageDimensionality #10'])
+    return header
+
+def _gen_data_particles_header(attributes):
+    header = [
+        '# version 30001\n',
+        'data_particles\n',
+        'loop_']
+    for n in np.arange(attributes.shape[0]):
+        header.append('%s #%d' % (attributes[n], n+1))
+    return "\n".join(header)
+
+class Particles:
     def __init__(
             self, optics_group_name=None, optics_group=None, mtf_filename=None,
             mic_orig_pix_size=None, voltage=None, spherical_aberration=None,
@@ -173,102 +200,159 @@ class particles_star:
         self._image_size = image_size
         self._image_dimensionality = image_dimensionality
         
+        self._particle_col_exists = np.zeros(particle_column_possibilities.shape[0], dtype=bool)
+        
+        n = 0
         # data particles info
         self._x_coords = x_coords
         if x_coords is not None:
             self._x_coords = np.array(x_coords, dtype=float)
+            self._particle_col_exists[n] = True
         
+        
+        n += 1
         self._y_coords = y_coords
         if y_coords is not None:
             self._y_coords = np.array(y_coords, dtype=float)
+            self._particle_col_exists[n] = True
         
+        n += 1
         self._image_names = image_names
         if image_names is not None:
             self._image_names = np.array(image_names, dtype=str)
-            
+            self._particle_col_exists[n] = True
+        
+        n += 1
         self._mic_names = mic_names
         if mic_names is not None:
             self._mic_names = np.array(mic_names, dtype=str)
+            self._particle_col_exists[n] = True
         
+        n += 1
+        self._optics_groups = optics_groups
+        if optics_group is not None:
+            self._optics_groups = np.array(optics_groups, dtype=int)
+            self._particle_col_exists[n] = True
+        
+        n += 1
         self._max_res = max_res
         if max_res is not None:
             self._max_res = np.array(max_res, dtype=float)
+            self._particle_col_exists[n] = True
         
+        n += 1
         self._fig_of_merit = fig_of_merit
         if fig_of_merit is not None:
             self._fig_of_merit = np.array(fig_of_merit, dtype=float)
-            
+            self._particle_col_exists[n] = True
+        
+        n += 1
         self._defocus_U = defocus_U
         if defocus_U is not None:
             self._defocus_U = np.array(defocus_U, dtype=float)
-            
+            self._particle_col_exists[n] = True
+        
+        n += 1
         self._defocus_V = defocus_V
         if defocus_V is not None:
             self._defocus_V = np.array(defocus_V, dtype=float)
-            
+            self._particle_col_exists[n] = True
+        
+        n += 1
         self._defocus_angle = defocus_angle
         if defocus_angle is not None:
             self._defocus_angle = np.array(defocus_angle, dtype=float)
-            
+            self._particle_col_exists[n] = True
+        
+        n += 1
         self._ctf_bfactor = ctf_bfactor
         if ctf_bfactor is not None:
             self._ctf_bfactor = np.array(ctf_bfactor, dtype=float)
-            
+            self._particle_col_exists[n] = True
+        
+        n += 1
         self._ctf_scale_factor = ctf_scale_factor
         if ctf_scale_factor is not None:
             self._ctf_scale_factor = np.array(ctf_scale_factor, dtype=float)
-            
+            self._particle_col_exists[n] = True
+        
+        n += 1
         self._phase_shift = phase_shift
         if phase_shift is not None:
             self._phase_shift = np.array(phase_shift, dtype=float)
+            self._particle_col_exists[n] = True
             
+        n += 1
         self._group_number = group_number
         if group_number is not None:
             self._group_number = np.array(group_number, dtype=int)
+            self._particle_col_exists[n] = True
             
+        n += 1
         self._ang_rot = ang_rot
         if ang_rot is not None:
             self._ang_rot = np.array(ang_rot, dtype=float)
+            self._particle_col_exists[n] = True
             
+        n += 1
         self._ang_tilt = ang_tilt
         if ang_tilt is not None:
             self._ang_tilt = np.array(ang_tilt, dtype=float)
+            self._particle_col_exists[n] = True
             
+        n += 1
         self._ang_psi = ang_psi
         if ang_psi is not None:
             self._ang_psi = np.array(ang_psi, dtype=float)
+            self._particle_col_exists[n] = True
             
+        n += 1
         self._origin_x_angst = origin_x_angst
         if origin_x_angst is not None:
             self._origin_x_angst = np.array(origin_x_angst, dtype=float)
+            self._particle_col_exists[n] = True
             
+        n += 1
         self._origin_y_angst = origin_y_angst
         if origin_y_angst is not None:
             self._origin_y_angst = np.array(origin_y_angst, dtype=float)
+            self._particle_col_exists[n] = True
             
+        n += 1
         self._class_num = class_num
         if class_num is not None:
             self._class_num = np.array(class_num, dtype=int)
+            self._particle_col_exists[n] = True
             
+        n += 1
         self._norm_correction = norm_correction
         if norm_correction is not None:
             self._norm_correction = np.array(norm_correction, dtype=float)
+            self._particle_col_exists[n] = True
             
+        n += 1
         self._ll_contrib = ll_contrib
         if ll_contrib is not None:
             self._ll_contrib = np.array(ll_contrib, dtype=float)
+            self._particle_col_exists[n] = True
             
+        n += 1
         self._max_val_prob_dist = max_val_prob_dist
         if max_val_prob_dist is not None:
             self._max_val_prob_dist = np.array(max_val_prob_dist, dtype=float)
+            self._particle_col_exists[n] = True
             
+        n += 1
         self._n_sig_samples = n_sig_samples
         if n_sig_samples is not None:
             self._n_sig_samples = np.array(n_sig_samples, dtype=int)
+            self._particle_col_exists[n] = True
             
+        n += 1
         self._rand_subset = rand_subset
         if rand_subset is not None:
             self._rand_subset = np.array(rand_subset, dtype=int)
+            self._particle_col_exists[n] = True
         
     @property
     def angles(self):
@@ -278,17 +362,17 @@ class particles_star:
     def _optics_data_line(self, n):
         return " ".join(
             [
-                new_particles._optics_group_name[n],
-                '{0: >12}'.format(new_particles._optics_group[n]),
-                new_particles._mtf_filename[n],
-                '{0: >12}'.format(new_particles._mic_orig_pix_size[n]),
-                '{0: >12}'.format(new_particles._voltage[n]),
-                '{0: >12}'.format(new_particles._spherical_aberration[n]),
-                '{0: >12}'.format(new_particles._amplitude_contrast[n]),
-                '{0: >12}'.format(new_particles._image_pix_size[n]),
-                '{0: >12}'.format(new_particles._image_size[n]),
-                '{0: >12}'.format(new_particles._image_dimensionality[n]),
-                '\n'
+                self._optics_group_name[n],
+                '{0: >12}'.format(self._optics_group[n]),
+                self._mtf_filename[n],
+                '{0: >12}'.format(self._mic_orig_pix_size[n]),
+                '{0: >12}'.format(self._voltage[n]),
+                '{0: >12}'.format(self._spherical_aberration[n]),
+                '{0: >12}'.format(self._amplitude_contrast[n]),
+                '{0: >12}'.format(self._image_pix_size[n]),
+                '{0: >12}'.format(self._image_size[n]),
+                '{0: >12}'.format(self._image_dimensionality[n]),
+#                 '\n'
             ])
     
     @property
@@ -299,140 +383,180 @@ class particles_star:
         string = []
 
         try:
-            string.append('{0: >#012.6f}'.format(new_particles._x_coords[n]))
+            string.append('{0: >#012.6f}'.format(self._x_coords[n]))
         except:
             pass 
 
         try:
-            string.append('{0: >#012.6f}'.format(new_particles._y_coords[n]))
+            string.append('{0: >#012.6f}'.format(self._y_coords[n]))
         except:
             pass
 
         try:
-            string.append(new_particles._image_names[n])
+            string.append(self._image_names[n])
         except:
             pass
 
         try:
-            string.append(new_particles._mic_names[n])
+            string.append(self._mic_names[n])
         except:
             pass
 
         try:
-            string.append('{0: >12}'.format(new_particles._optics_group[n]))
+            string.append('{0: >12}'.format(self._optics_groups[n]))
         except:
             pass
 
         try:
-            string.append('{0: >#012.6f}'.format(new_particles._max_res[n]))
+            string.append('{0: >#012.6f}'.format(self._max_res[n]))
         except:
             pass
 
         try:
-            string.append('{0: >#012.6f}'.format(new_particles._fig_of_merit[n]))
+            string.append('{0: >#012.6f}'.format(self._fig_of_merit[n]))
         except:
             pass
 
         try:
-            string.append('{0: >#012.6f}'.format(new_particles._defocus_U[n]))
+            string.append('{0: >#012.6f}'.format(self._defocus_U[n]))
         except:
             pass
 
         try:
-            string.append('{0: >#012.6f}'.format(new_particles._defocus_V[n]))
+            string.append('{0: >#012.6f}'.format(self._defocus_V[n]))
         except:
             pass
 
         try:
-            string.append('{0: >#012.6f}'.format(new_particles._defocus_angle[n]))
+            string.append('{0: >#012.6f}'.format(self._defocus_angle[n]))
         except:
             pass
 
         try:
-            string.append('{0: >#012.6f}'.format(new_particles._ctf_bfactor[n]))
+            string.append('{0: >#012.6f}'.format(self._ctf_bfactor[n]))
         except:
             pass
 
         try:
-            string.append('{0: >#012.6f}'.format(new_particles._ctf_scale_factor[n]))
+            string.append('{0: >#012.6f}'.format(self._ctf_scale_factor[n]))
         except:
             pass
 
         try:
-            string.append('{0: >#012.6f}'.format(new_particles._phase_shift[n]))
+            string.append('{0: >#012.6f}'.format(self._phase_shift[n]))
         except:
             pass
 
         try:
-            string.append('{0: >12}'.format(new_particles._group_number[n]))
+            string.append('{0: >12}'.format(self._group_number[n]))
         except:
             pass
 
         try:
-            string.append('{0: >#012.6f}'.format(new_particles._ang_rot[n]))
+            string.append('{0: >#012.6f}'.format(self._ang_rot[n]))
         except:
             pass
 
         try:
-            string.append('{0: >#012.6f}'.format(new_particles._ang_tilt[n]))
+            string.append('{0: >#012.6f}'.format(self._ang_tilt[n]))
         except:
             pass
 
         try:
-            string.append('{0: >#012.6f}'.format(new_particles._ang_psi[n]))
+            string.append('{0: >#012.6f}'.format(self._ang_psi[n]))
         except:
             pass
 
         try:
-            string.append('{0: >#012.6f}'.format(new_particles._origin_x_angst[n]))
+            string.append('{0: >#012.6f}'.format(self._origin_x_angst[n]))
         except:
             pass
 
         try:
-            string.append('{0: >#012.6f}'.format(new_particles._origin_y_angst[n]))
+            string.append('{0: >#012.6f}'.format(self._origin_y_angst[n]))
         except:
             pass
 
         try:
-            string.append('{0: >12}'.format(new_particles._class_num[n]))
+            string.append('{0: >12}'.format(self._class_num[n]))
         except:
             pass
 
         try:
-            string.append('{0: >#012.6f}'.format(new_particles._norm_correction[n]))
+            string.append('{0: >#012.6f}'.format(self._norm_correction[n]))
         except:
             pass
 
         try:
-            string.append('{0: >#012.6e}'.format(new_particles._ll_contrib[n]))
+            string.append('{0: >#012.6e}'.format(self._ll_contrib[n]))
         except:
             pass
 
         try:
-            string.append('{0: >#012.6f}'.format(new_particles._max_val_prob_dist[n]))
+            string.append('{0: >#012.6f}'.format(self._max_val_prob_dist[n]))
         except:
             pass
 
         try:
-            string.append('{0: >12}'.format(new_particles._n_sig_samples[n]))
+            string.append('{0: >12}'.format(self._n_sig_samples[n]))
         except:
             pass
 
         try:
-            string.append('{0: >12}'.format(new_particles._rand_subset[n]))
+            string.append('{0: >12}'.format(self._rand_subset[n]))
         except:
             pass
         
-        string.append("\n")
-
         return " ".join(string)
         
     
     @property
     def particles_data(self):
-        return [self._particles_data_line(n) for n in np.arange(len(self._x_coords))]
+        return [self._particles_data_line(n) for n in np.arange(self.n_particles)]
+        
+    @property
+    def attributes(self):
+        return particle_column_possibilities[self._particle_col_exists]
     
+    @property
+    def star_output(self):
+        output = np.hstack(
+            [
+                [''],
+                [_gen_data_optics_header()],
+                self.optics_data,
+                ['\n'],
+                [_gen_data_particles_header(self.attributes)],
+                self.particles_data
+            ])
+        return output
+
+    @property
+    def n_particles(self):
+        return len(self._x_coords)
+
     def set_angles(self, angles):
         angles = np.array(angles)
         self._ang_rot, self._ang_tilt, self._ang_psi = angles.T
         return
+
+    def save_star(self, output_name):
+        output = self.star_output
+        with open(output_name, 'w') as f:
+            for ln in output:
+                f.write('%s \n' % ln)
+        return
+
+    @property
+    def n_classes(self):
+        return np.unique(self._class_num).shape[0] if self._class_num is not None else None
+
+    @property
+    def avg_merit(self):
+        return np.average(self._fig_of_merit) if self._fig_of_merit is not None else None
+
+    def __repr__(self):
+        classes = 'None' if self.n_classes is None else '%d' % self.n_classes
+        merit = 'None' if self.avg_merit is None else '%0.3f' % self.avg_merit
+        rep = 'Particles(n_particles=%d, n_classes=%s, avg_merit=%s)' % (self.n_particles, classes, merit)
+        return rep
