@@ -1,562 +1,362 @@
+import matplotlib.pylab as plt
 import numpy as np
 
-particle_column_possibilities = np.array(
-    [
-        ["_rlnCoordinateX"],
-        ["_rlnCoordinateY"],
-        ["_rlnImageName"],
-        ["_rlnMicrographName"],
-        ["_rlnOpticsGroup"],
-        ["_rlnCtfMaxResolution"],
-        ["_rlnCtfFigureOfMerit"],
-        ["_rlnDefocusU"],
-        ["_rlnDefocusV"],
-        ["_rlnDefocusAngle"],
-        ["_rlnCtfBfactor"],
-        ["_rlnCtfScalefactor"],
-        ["_rlnPhaseShift"],
-        ["_rlnGroupNumber"],
-        ["_rlnAngleRot"],
-        ["_rlnAngleTilt"],
-        ["_rlnAnglePsi"],
-        ["_rlnOriginXAngst"],
-        ["_rlnOriginYAngst"],
-        ["_rlnClassNumber"],
-        ["_rlnNormCorrection"],
-        ["_rlnLogLikeliContribution"],
-        ["_rlnMaxValueProbDistribution"],
-        ["_rlnNrOfSignificantSamples"],
-        ["_rlnRandomSubset"]]).reshape(-1)
+# common star file labels and their type
+LABELS = {
+    'OpticsGroupName': str,
+    'OpticsGroup': int,
+    'MtfFileName': str, 
+    'MicrographOriginalPixelSize': float,
+    'ImagePixelSize': float,
+    'ImageSize': int,
+    'ImageDimensionality' : int,
+    'Voltage': float,
+    'DefocusU': float,
+    'DefocusV': float,
+    'DefocusAngle': float,
+    'SphericalAberration': float,
+    'DetectorPixelSize': float,
+    'CtfFigureOfMerit': float,
+    'Magnification': float,
+    'AmplitudeContrast': float,
+    'ImageName': str,
+    'OriginalName': str,
+    'CtfImage': str,
+    'CoordinateX': float,
+    'CoordinateY': float,
+    'CoordinateZ': float,
+    'NormCorrection': float,
+    'MicrographName': str,
+    'GroupName': str,
+    'GroupNumber': str,
+    'OriginX': float,
+    'OriginY': float,
+    'AngleRot': float,
+    'AngleTilt': float,
+    'AnglePsi': float,
+    'ClassNumber': int,
+    'LogLikeliContribution': float,
+    'RandomSubset': int,
+    'ParticleName': str,
+    'OriginalParticleName': str,
+    'NrOfSignificantSamples': float,
+    'NrOfFrames': int,
+    'MaxValueProbDistribution': float
+}
 
-def load_particles(filename):
-    params = _load_particles_params(filename)
-    return Particles(**params)
 
-def _load_particles_params(filename):
-    optics_columns = [
-        ['_rlnOpticsGroupName', '#1'],
-        ['_rlnOpticsGroup', '#2'],
-        ['_rlnMtfFileName', '#3'],
-        ['_rlnMicrographOriginalPixelSize', '#4'],
-        ['_rlnVoltage', '#5'],
-        ['_rlnSphericalAberration', '#6'],
-        ['_rlnAmplitudeContrast', '#7'],
-        ['_rlnImagePixelSize', '#8'],
-        ['_rlnImageSize', '#9'],
-        ['_rlnImageDimensionality', '#10']]
-
-    optics_vars = np.array(
-        [
-            ["optics_group_name"],
-            ["optics_group"],
-            ["mtf_filename"],
-            ["mic_orig_pix_size"],
-            ["voltage"],
-            ["spherical_aberration"],
-            ["amplitude_contrast"],
-            ["image_pix_size"],
-            ["image_size"],
-            ["image_dimensionality"]]).reshape(-1)
-
-    particle_vars = np.array(
-        [
-            ["x_coords"],
-            ["y_coords"],
-            ["image_names"],
-            ["mic_names"],
-            ["optics_groups"],
-            ["max_res"],
-            ["fig_of_merit"],
-            ["defocus_U"],
-            ["defocus_V"],
-            ["defocus_angle"],
-            ["ctf_bfactor"],
-            ["ctf_scale_factor"],
-            ["phase_shift"],
-            ["group_number"],
-            ["ang_rot"],
-            ["ang_tilt"],
-            ["ang_psi"],
-            ["origin_x_angst"],
-            ["origin_y_angst"],
-            ["class_num"],
-            ["norm_correction"],
-            ["ll_contrib"],
-            ["max_val_prob_dist"],
-            ["n_sig_samples"],
-            ["rand_subset"]]).reshape(-1)
-
-    pull_data_optics = False
-    pull_data_particles = False
-    with open(filename) as f:
-        data = f.readlines()
-
-        for n in np.arange(len(data)):
-            ln = data[n]
-            if (ln.find("data_optics") == 0):
-                pull_data_optics = True
-                pull_data_particles = False
-            elif (ln.find("data_particles") == 0):
-                pull_data_optics = False
-                pull_data_particles = True
-            if (ln.find("loop_") == 0) and pull_data_optics:
-                try:
-                    observed_optics_columns = data[n+1:n+11]
-                    for i in np.arange(len(observed_optics_columns)):
-                        assert observed_optics_columns[i].split() == optics_columns[i]
-                except:
-                    print(observed_optics_columns[i].split(), optics_columns[i])
-                    print(
-                        "unrecognized organization of data optics."
-                        "Perhaps i don't understand the format perfectly?")
-                    raise
-
-                data_optics = []
-                i = n+11
-                ln = data[i]
-                while ln.split() != [] :
-                    data_optics.append(ln.split())
-                    i += 1
-                    ln = data[i]
-            elif (ln.find("loop_") == 0) and pull_data_particles:
-                try:
-                    observed_data_columns = data[n+1:n+26]
-                    column_ids = []
-                    for i in np.arange(26):
-                        col_val = data[n+i].split()[0]
-
-                        col_id = np.where(particle_column_possibilities == col_val)[0]
-                        if col_id.size == 0:
-                            col_id = [-np.inf]
-                        column_ids.append(col_id[0])
-                    column_ids = np.array(column_ids)
-                    column_ids = np.array(column_ids[np.isfinite(column_ids)], dtype=int)
-                except:
-                    pass
-                data_particles = []
-                i = n+1+column_ids.shape[0]
-                ln = data[i]
-                while ln.split() != [] :
-                    data_particles.append(ln.split())
-                    i += 1
-                    ln = data[i]
-    data_particles = np.array(data_particles)
-    data_optics = np.array(data_optics)
-    params = {}
-    for n in np.arange(optics_vars.shape[0]):
-        params[optics_vars[n]] = data_optics[:,n]
-    for n in np.arange(column_ids.shape[0]):
-        params[particle_vars[column_ids][n]] = data_particles[:,n]
-    return params
-
-def _gen_data_optics_header():
-    header = "\n".join(
-        [
-            '# version 30001\n',
-            'data_optics\n',
-            'loop_',
-            '_rlnOpticsGroupName #1',
-            '_rlnOpticsGroup #2',
-            '_rlnMtfFileName #3',
-            '_rlnMicrographOriginalPixelSize #4',
-            '_rlnVoltage #5',
-            '_rlnSphericalAberration #6',
-            '_rlnAmplitudeContrast #7',
-            '_rlnImagePixelSize #8',
-            '_rlnImageSize #9',
-            '_rlnImageDimensionality #10'])
-    return header
-
-def _gen_data_particles_header(attributes):
-    header = [
-        '# version 30001\n',
-        'data_particles\n',
-        'loop_']
-    for n in np.arange(attributes.shape[0]):
-        header.append('%s #%d' % (attributes[n], n+1))
-    return "\n".join(header)
-
-class Particles:
-    def __init__(
-            self, optics_group_name=None, optics_group=None, mtf_filename=None,
-            mic_orig_pix_size=None, voltage=None, spherical_aberration=None,
-            amplitude_contrast=None, mic_pix_size=None, image_pix_size=None, image_size=None,
-            image_dimensionality=None, x_coords=None, y_coords=None, image_names=None,
-            mic_names=None, optics_groups=None, max_res=None, fig_of_merit=None,
-            defocus_U=None, defocus_V=None, defocus_angle=None, ctf_bfactor=None,
-            ctf_scale_factor=None, phase_shift=None, group_number=None, ang_rot=None,
-            ang_tilt=None, ang_psi=None, origin_x_angst=None, origin_y_angst=None,
-            class_num=None, norm_correction=None, ll_contrib=None, max_val_prob_dist=None,
-            n_sig_samples=None, rand_subset=None):
-        # optics group info
-        self._optics_group_name = optics_group_name
-        self._optics_group = optics_group
-        self._mtf_filename = mtf_filename
-        self._mic_orig_pix_size = mic_orig_pix_size
-        self._voltage = voltage
-        self._spherical_aberration = spherical_aberration
-        self._amplitude_contrast = amplitude_contrast
-        self._image_pix_size = image_pix_size
-        self._image_size = image_size
-        self._image_dimensionality = image_dimensionality
-        
-        self._particle_col_exists = np.zeros(particle_column_possibilities.shape[0], dtype=bool)
-        
-        n = 0
-        # data particles info
-        self._x_coords = x_coords
-        if x_coords is not None:
-            self._x_coords = np.array(x_coords, dtype=float)
-            self._particle_col_exists[n] = True
-        
-        
-        n += 1
-        self._y_coords = y_coords
-        if y_coords is not None:
-            self._y_coords = np.array(y_coords, dtype=float)
-            self._particle_col_exists[n] = True
-        
-        n += 1
-        self._image_names = image_names
-        if image_names is not None:
-            self._image_names = np.array(image_names, dtype=str)
-            self._particle_col_exists[n] = True
-        
-        n += 1
-        self._mic_names = mic_names
-        if mic_names is not None:
-            self._mic_names = np.array(mic_names, dtype=str)
-            self._particle_col_exists[n] = True
-        
-        n += 1
-        self._optics_groups = optics_groups
-        if optics_group is not None:
-            self._optics_groups = np.array(optics_groups, dtype=int)
-            self._particle_col_exists[n] = True
-        
-        n += 1
-        self._max_res = max_res
-        if max_res is not None:
-            self._max_res = np.array(max_res, dtype=float)
-            self._particle_col_exists[n] = True
-        
-        n += 1
-        self._fig_of_merit = fig_of_merit
-        if fig_of_merit is not None:
-            self._fig_of_merit = np.array(fig_of_merit, dtype=float)
-            self._particle_col_exists[n] = True
-        
-        n += 1
-        self._defocus_U = defocus_U
-        if defocus_U is not None:
-            self._defocus_U = np.array(defocus_U, dtype=float)
-            self._particle_col_exists[n] = True
-        
-        n += 1
-        self._defocus_V = defocus_V
-        if defocus_V is not None:
-            self._defocus_V = np.array(defocus_V, dtype=float)
-            self._particle_col_exists[n] = True
-        
-        n += 1
-        self._defocus_angle = defocus_angle
-        if defocus_angle is not None:
-            self._defocus_angle = np.array(defocus_angle, dtype=float)
-            self._particle_col_exists[n] = True
-        
-        n += 1
-        self._ctf_bfactor = ctf_bfactor
-        if ctf_bfactor is not None:
-            self._ctf_bfactor = np.array(ctf_bfactor, dtype=float)
-            self._particle_col_exists[n] = True
-        
-        n += 1
-        self._ctf_scale_factor = ctf_scale_factor
-        if ctf_scale_factor is not None:
-            self._ctf_scale_factor = np.array(ctf_scale_factor, dtype=float)
-            self._particle_col_exists[n] = True
-        
-        n += 1
-        self._phase_shift = phase_shift
-        if phase_shift is not None:
-            self._phase_shift = np.array(phase_shift, dtype=float)
-            self._particle_col_exists[n] = True
-            
-        n += 1
-        self._group_number = group_number
-        if group_number is not None:
-            self._group_number = np.array(group_number, dtype=int)
-            self._particle_col_exists[n] = True
-            
-        n += 1
-        self._ang_rot = ang_rot
-        if ang_rot is not None:
-            self._ang_rot = np.array(ang_rot, dtype=float)
-            self._particle_col_exists[n] = True
-            
-        n += 1
-        self._ang_tilt = ang_tilt
-        if ang_tilt is not None:
-            self._ang_tilt = np.array(ang_tilt, dtype=float)
-            self._particle_col_exists[n] = True
-            
-        n += 1
-        self._ang_psi = ang_psi
-        if ang_psi is not None:
-            self._ang_psi = np.array(ang_psi, dtype=float)
-            self._particle_col_exists[n] = True
-            
-        n += 1
-        self._origin_x_angst = origin_x_angst
-        if origin_x_angst is not None:
-            self._origin_x_angst = np.array(origin_x_angst, dtype=float)
-            self._particle_col_exists[n] = True
-            
-        n += 1
-        self._origin_y_angst = origin_y_angst
-        if origin_y_angst is not None:
-            self._origin_y_angst = np.array(origin_y_angst, dtype=float)
-            self._particle_col_exists[n] = True
-            
-        n += 1
-        self._class_num = class_num
-        if class_num is not None:
-            self._class_num = np.array(class_num, dtype=int)
-            self._particle_col_exists[n] = True
-            
-        n += 1
-        self._norm_correction = norm_correction
-        if norm_correction is not None:
-            self._norm_correction = np.array(norm_correction, dtype=float)
-            self._particle_col_exists[n] = True
-            
-        n += 1
-        self._ll_contrib = ll_contrib
-        if ll_contrib is not None:
-            self._ll_contrib = np.array(ll_contrib, dtype=float)
-            self._particle_col_exists[n] = True
-            
-        n += 1
-        self._max_val_prob_dist = max_val_prob_dist
-        if max_val_prob_dist is not None:
-            self._max_val_prob_dist = np.array(max_val_prob_dist, dtype=float)
-            self._particle_col_exists[n] = True
-            
-        n += 1
-        self._n_sig_samples = n_sig_samples
-        if n_sig_samples is not None:
-            self._n_sig_samples = np.array(n_sig_samples, dtype=int)
-            self._particle_col_exists[n] = True
-            
-        n += 1
-        self._rand_subset = rand_subset
-        if rand_subset is not None:
-            self._rand_subset = np.array(rand_subset, dtype=int)
-            self._particle_col_exists[n] = True
-        
-    @property
-    def angles(self):
-        ang_output = np.vstack([self._ang_rot, self._ang_tilt, self._ang_psi]).T
-        return ang_output
-
-    def _optics_data_line(self, n):
-        return " ".join(
-            [
-                self._optics_group_name[n],
-                '{0: >12}'.format(self._optics_group[n]),
-                self._mtf_filename[n],
-                '{0: >12}'.format(self._mic_orig_pix_size[n]),
-                '{0: >12}'.format(self._voltage[n]),
-                '{0: >12}'.format(self._spherical_aberration[n]),
-                '{0: >12}'.format(self._amplitude_contrast[n]),
-                '{0: >12}'.format(self._image_pix_size[n]),
-                '{0: >12}'.format(self._image_size[n]),
-                '{0: >12}'.format(self._image_dimensionality[n]),
-#                 '\n'
-            ])
+class Label():
+    """Label class
+    
+    Attributes
+    ----------
+    data : nd.array, shape=(n_items, )
+        The list of data associated with the label
+    type : str
+        The data type for the label, i.e. string, int, or float
+    """
+    def __init__(self, labelName, data=None):
+        """
+        Inputs
+        ----------
+        labelName : str
+            The name of the label
+        data : array-like, shape=(n_items,), default=None,
+            Optionally populate label with a set of data upon initilization
+        """
+        self.name = labelName
+        # Get the type from the LABELS dict, assume str by default
+        self.type = LABELS.get(labelName, str)
+        self.clear()
+        if data is not None:
+            self._data = list(data)
     
     @property
-    def optics_data(self):
-        return [self._optics_data_line(n) for n in np.arange(len(self._optics_group_name))]
-    
-    def _particles_data_line(self, n):
-        string = []
-
-        try:
-            string.append('{0: >#012.6f}'.format(self._x_coords[n]))
-        except:
-            pass 
-
-        try:
-            string.append('{0: >#012.6f}'.format(self._y_coords[n]))
-        except:
-            pass
-
-        try:
-            string.append(self._image_names[n])
-        except:
-            pass
-
-        try:
-            string.append(self._mic_names[n])
-        except:
-            pass
-
-        try:
-            string.append('{0: >12}'.format(self._optics_groups[n]))
-        except:
-            pass
-
-        try:
-            string.append('{0: >#012.6f}'.format(self._max_res[n]))
-        except:
-            pass
-
-        try:
-            string.append('{0: >#012.6f}'.format(self._fig_of_merit[n]))
-        except:
-            pass
-
-        try:
-            string.append('{0: >#012.6f}'.format(self._defocus_U[n]))
-        except:
-            pass
-
-        try:
-            string.append('{0: >#012.6f}'.format(self._defocus_V[n]))
-        except:
-            pass
-
-        try:
-            string.append('{0: >#012.6f}'.format(self._defocus_angle[n]))
-        except:
-            pass
-
-        try:
-            string.append('{0: >#012.6f}'.format(self._ctf_bfactor[n]))
-        except:
-            pass
-
-        try:
-            string.append('{0: >#012.6f}'.format(self._ctf_scale_factor[n]))
-        except:
-            pass
-
-        try:
-            string.append('{0: >#012.6f}'.format(self._phase_shift[n]))
-        except:
-            pass
-
-        try:
-            string.append('{0: >12}'.format(self._group_number[n]))
-        except:
-            pass
-
-        try:
-            string.append('{0: >#012.6f}'.format(self._ang_rot[n]))
-        except:
-            pass
-
-        try:
-            string.append('{0: >#012.6f}'.format(self._ang_tilt[n]))
-        except:
-            pass
-
-        try:
-            string.append('{0: >#012.6f}'.format(self._ang_psi[n]))
-        except:
-            pass
-
-        try:
-            string.append('{0: >#012.6f}'.format(self._origin_x_angst[n]))
-        except:
-            pass
-
-        try:
-            string.append('{0: >#012.6f}'.format(self._origin_y_angst[n]))
-        except:
-            pass
-
-        try:
-            string.append('{0: >12}'.format(self._class_num[n]))
-        except:
-            pass
-
-        try:
-            string.append('{0: >#012.6f}'.format(self._norm_correction[n]))
-        except:
-            pass
-
-        try:
-            string.append('{0: >#012.6e}'.format(self._ll_contrib[n]))
-        except:
-            pass
-
-        try:
-            string.append('{0: >#012.6f}'.format(self._max_val_prob_dist[n]))
-        except:
-            pass
-
-        try:
-            string.append('{0: >12}'.format(self._n_sig_samples[n]))
-        except:
-            pass
-
-        try:
-            string.append('{0: >12}'.format(self._rand_subset[n]))
-        except:
-            pass
-        
-        return " ".join(string)
-        
+    def data(self):
+        return np.array(self._data, dtype=self.type)
     
     @property
-    def particles_data(self):
-        return [self._particles_data_line(n) for n in np.arange(self.n_particles)]
+    def _n_items(self):
+        return len(self._data)
+    
+    def clear(self):
+        self._data = []
+
+    def __repr__(self):
+        output = "Label(labelName=%s, n_items=%d)" % (self.name, self._n_items)
+        return output 
         
-    @property
-    def attributes(self):
-        return particle_column_possibilities[self._particle_col_exists]
+    def __str__(self):
+        return self.name
+
+    def __cmp__(self, other):
+        return self.name == str(other)
+    
+    def __getitem__(self, iis):
+        new_data = self.data[iis].reshape(-1)
+        new_label = Label(self.name, data=new_data)
+        return new_label
+    
+    def __setitem__(self, iis, value):
+        new_data = self.data
+        new_data[iis] = value
+        self._data = list(new_data)
+        return
+    
+    def __len__(self):
+        return len(self._data)
+    
+    def append(self, other, inplace=True):
+        self._data.append(self.type(other))
+
+
+class MetaData():
+    """MetaData class containing an organized set of labels and their data.
+    Attributes are populated from found Labels.
+
+    Attributes
+    ----------
+    labels : dict, shape=(n_labels),
+        A dictionary containing each label class.
+    label_order : dict, shape=(n_labels)
+        A dictionary to keep track of label ordering.
+    label_names : list, shape=(n_labels)
+        The name of each label.
+    """
+    def __init__(self, group_name, labels=None, label_order=None):
+        self.name = group_name
+        self._clear()
+        if labels:
+            self._labels = labels
+            self.__dict__.update(self._labels)
+        if label_order:
+            self._label_order = label_order
+        self._assert_consistent()
+    
+    def __getitem__(self, iis):
+        new_labels = OrderedDict()
+        for key,value in self._labels.items():
+            new_labels[key] = value[iis]
+        return MetaData(
+            group_name=self.name, labels=new_labels,
+            label_order=self._label_order)
+    
+    def __setitem__(self, iis, other):
+        assert np.all(np.sort(self.label_names) == np.sort(other.label_names))
+        new_labels = OrderedDict()
+        for key,value in self._labels.items():
+            new_label = value
+            new_label[iis] = other._labels[key].data
+            new_labels[key] = new_label
+        return
+            
+    
+    def _assert_consistent(self):
+        try:
+            assert self._consistent_num_items
+        except:
+            logging.warning('inconsistent number of items between labels!')
+        return
+    
+    def __repr__(self):
+#         self._assert_consistent()
+        output = "%s(n_labels=%d, n_items=%d)" % \
+            (
+                self.name, self._n_labels,
+                np.average(self._n_label_items))
+        return output
     
     @property
-    def star_output(self):
-        output = np.hstack(
-            [
-                [''],
-                [_gen_data_optics_header()],
-                self.optics_data,
-                ['\n'],
-                [_gen_data_particles_header(self.attributes)],
-                self.particles_data
-            ])
+    def _n_items(self):
+        return np.average(self._n_label_items)
+    
+    @property
+    def label_names(self):
+        return [name for name in self.labels.keys()]
+    
+    @property
+    def labels(self):
+        return self._labels
+    
+    @property
+    def _n_labels(self):
+        return len(self._labels)
+    
+    @property
+    def _n_label_items(self):
+        return [l._n_items for l in self._labels.values()]
+    
+    @property
+    def _consistent_num_items(self):
+        consistent = False
+        if (np.unique(self._n_label_items).shape[0] == 1) or \
+                (np.unique(self._n_label_items).shape[0] == 0):
+            consistent = True
+        return consistent
+    
+    def _clear(self):
+        self._labels = OrderedDict()
+        self._label_order = OrderedDict()
+
+    def _add_label(self, label_name, order_num):
+        self._labels[label_name] = Label(label_name)
+        self._label_order[order_num] = label_name
+        self.__dict__.update(self._labels)
+
+    def copy(self):
+        return copy.deepcopy(self)
+
+
+class StarFile():
+    """Class to parse Relion star file. Contains all the MetaData found
+    within a file. Attributes are dynamically populated with found MetaData.
+
+    Attributes
+    ----------
+    
+    """
+    def __init__(self, input_star=None):
+        if input_star:
+            self.read(input_star)
+        else:
+            self.clear()
+            
+    def __repr__(self):
+        output = "StarFile(n_groups=%d)" % self._n_groups
         return output
 
     @property
-    def n_particles(self):
-        return len(self._x_coords)
-
-    def set_angles(self, angles):
-        angles = np.array(angles)
-        self._ang_rot, self._ang_tilt, self._ang_psi = angles.T
-        return
-
-    def save_star(self, output_name):
-        output = self.star_output
-        with open(output_name, 'w') as f:
-            for ln in output:
-                f.write('%s \n' % ln)
-        return
-
+    def _n_groups(self):
+        return len(self._data)
+    
     @property
-    def n_classes(self):
-        return np.unique(self._class_num).shape[0] if self._class_num is not None else None
+    def group_names(self):
+        return [name for name in self._data.keys()]
+        
+    def clear(self):
+        self._data = OrderedDict()
+        self._data_order = OrderedDict()
 
+    def _add_metadata(self, group_name, order):
+        self._data[group_name] = MetaData(group_name)
+        self._data_order[order] = group_name
+
+    def read(self, input_star):
+        self.clear()
+
+        with open(input_star, "r") as f:
+            n_metadata = 0
+            n_label = 0
+            found_label = False
+            found_group = False
+            t = 0
+            for l in f:
+
+                # strip values
+                values = l.strip().split()
+
+                # if no values *after* extracting metadata, reset counter
+                if not values and found_group and found_label:
+                    found_group = False
+                    found_label = False
+                    n_metadata += 1
+                    continue
+                elif not values and found_group and not found_label:
+                    continue
+                elif not values and not found_group and not found_label:
+                    continue
+                elif values[0].startswith("#"):
+                    continue
+                elif values[0].startswith("loop"):
+                    assert found_group and not found_label
+                    continue
+
+                if values[0].startswith("_rln"):
+                    assert found_group
+                    label_name = values[0].split("_rln")[-1]
+                    self._data[group_name]._add_label(label_name, order_num=n_label)
+                    n_label += 1
+                    found_label = True
+                elif found_label:
+                    for label, value in zip(self._data[group_name]._labels.values(), values):
+                        label.append(value)
+                else:
+                    assert not found_group
+                    found_group = True
+                    group_name = values[0]
+                    self._add_metadata(group_name, n_metadata)
+        self.__dict__.update(self._data)
+        
+        def copy(self):
+            return copy.deepcopy(self)
+
+
+class Particles(StarFile):
+    """Particles star file manipulator.
+
+    Attributes
+    ----------
+    
+    """
+    def __init__(self, filename=None, data=None, data_order=None):
+        if filename:
+            self.read(filename)
+        elif data is not None:
+            self.clear()
+            self._data = data
+            if data_order is not None:
+                self._data_order = data_order
+        
+        try:
+            assert hasattr(self, 'data_particles')
+        except:
+            logging.warning(
+                'no data_particles group found! ' +\
+                'Is you sure this is a particles file?')
+        return
+    
     @property
-    def avg_merit(self):
-        return np.average(self._fig_of_merit) if self._fig_of_merit is not None else None
-
+    def _n_particles(self):
+        return self.data_particles._n_items
+    
+    @property
+    def _unique_classes(self):
+        unique_classes = None
+        if hasattr(self.data_particles, 'ClassNumber'):
+            unique_classes = np.unique(self.data_particles.ClassNumber.data)
+        return unique_classes
+    
+    @property
+    def _n_classes(self):
+        n_classes = 0
+        if self._unique_classes is not None:
+            n_classes = len(self._unique_classes)
+        return n_classes
+    
+    @property
+    def _class_counts(self):
+        class_counts = []
+        if self._unique_classes is not None:
+            class_counts = np.bincount(self.data_particles.ClassNumber.data)
+        return class_counts
+    
+    def __getitem__(self, iis):
+        new_particles = self.copy()
+        old_data = new_particles._data.pop('data_particles')
+        new_particles._data['data_particles'] = old_data[iis]
+        new_particles.__dict__.update(new_particles._data)
+        return new_particles
+    
+    def __setitem__(self, iis, other):
+        old_data_particles = self._data.pop('data_particles')
+        old_data_particles[iis] = other._data['data_particles']
+        self._data['data_particles'] = old_data_particles
+        self.__dict__.update(self._data)
+    
     def __repr__(self):
-        classes = 'None' if self.n_classes is None else '%d' % self.n_classes
-        merit = 'None' if self.avg_merit is None else '%0.3f' % self.avg_merit
-        rep = 'Particles(n_particles=%d, n_classes=%s, avg_merit=%s)' % (self.n_particles, classes, merit)
-        return rep
+        output = 'Particles(n_particles=%d, n_classes=%d)' % \
+            (self._n_particles, self._n_classes)
+        return output
+    
+    def copy(self):
+        return copy.deepcopy(self)
