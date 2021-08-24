@@ -39,11 +39,10 @@ LABELS = {
     'RandomSubset': int,
     'ParticleName': str,
     'OriginalParticleName': str,
-    'NrOfSignificantSamples': float,
+    'NrOfSignificantSamples': int,
     'NrOfFrames': int,
     'MaxValueProbDistribution': float
 }
-
 
 class Label():
     """Label class
@@ -194,6 +193,10 @@ class MetaData():
             consistent = True
         return consistent
     
+    @property
+    def _sorted_label_indices(self):
+        return np.argsort(list(self._label_order.keys()))
+    
     def _clear(self):
         self._labels = OrderedDict()
         self._label_order = OrderedDict()
@@ -205,9 +208,57 @@ class MetaData():
 
     def copy(self):
         return copy.deepcopy(self)
+    
+    def _header_lines(self):
+        header = [
+            "",
+            "# verion 30001",
+            ""]
+        header.append(self.name)
+        header.append("")
+        header.append("loop_")
+
+        keys = []
+        values = []
+        for k,v in self._label_order.items():
+            keys.append(k)
+            values.append(v)
+        
+        for n in self._sorted_label_indices:
+            label_name = "_rln" + self.labels[values[n]].name
+            order = keys[n]
+            new_line = label_name + " #%d" % (order + 1)
+            header.append(new_line)
+        return header
+    
+    def _get_new_line(self, line_number, label_names):
+        new_line = []
+        for n in self._sorted_label_indices:
+            label = self.labels[label_names[n]]
+            value = label._data[line_number]
+            if label.type is str:
+                new_line.append(value)
+            elif label.type is int:
+                new_line.append('{0: >12}'.format(value))
+            elif label.type is float:
+                if np.abs(value) >= 100000:
+                    new_line.append('{0: >#012.6e}'.format(value))
+                else:
+                    new_line.append('{0: >#012.6f}'.format(value))
+            else:
+                print("Error! not recognized label format for %s" % label.name)
+        return " ".join(new_line)
+    
+    def _data_lines(self):
+        n_items = int(self._n_items)
+        label_names = self.label_names
+        new_lines = []
+        for n in np.arange(n_items):
+            new_lines.append(self._get_new_line(n, label_names))
+        return new_lines
 
 
-class StarFile():
+class StarFile(object):
     """Class to parse Relion star file. Contains all the MetaData found
     within a file. Attributes are dynamically populated with found MetaData.
 
@@ -232,6 +283,10 @@ class StarFile():
     @property
     def group_names(self):
         return [name for name in self._data.keys()]
+    
+    @property
+    def _sorted_group_indices(self):
+        return np.argsort(list(self._data_order.keys()))
         
     def clear(self):
         self._data = OrderedDict()
@@ -260,6 +315,7 @@ class StarFile():
                     found_group = False
                     found_label = False
                     n_metadata += 1
+                    n_label = 0
                     continue
                 elif not values and found_group and not found_label:
                     continue
@@ -287,12 +343,25 @@ class StarFile():
                     self._add_metadata(group_name, n_metadata)
         self.__dict__.update(self._data)
         
-        def copy(self):
-            return copy.deepcopy(self)
+    def write(self, filename):
+        file_output = []
+        for n in self._sorted_group_indices:
+            group = self._data[particles.group_names[n]]
+            file_output.append(group._header_lines())
+            file_output.append(group._data_lines())
+            file_output.append("")
+        file_output = np.hstack(file_output)
+        with open(filename, "w") as f:
+            for line in file_output:
+                f.write(line+"\n")
+
+    def copy(self):
+        return copy.deepcopy(self)
 
 
 class Particles(StarFile):
-    """Particles star file manipulator.
+    """Class to parse Relion star file. Contains all the MetaData found
+    within a file. Attributes are dynamically populated with found MetaData.
 
     Attributes
     ----------
