@@ -1,5 +1,7 @@
+import copy
 import matplotlib.pylab as plt
 import numpy as np
+from collections import OrderedDict
 
 # common star file labels and their type
 LABELS = {
@@ -31,6 +33,8 @@ LABELS = {
     'GroupNumber': str,
     'OriginX': float,
     'OriginY': float,
+    'OriginXAngst': float,
+    'OriginYAngst': float,
     'AngleRot': float,
     'AngleTilt': float,
     'AnglePsi': float,
@@ -429,3 +433,11 @@ class Particles(StarFile):
     
     def copy(self):
         return copy.deepcopy(self)
+
+    def concatenate(particle_list):
+        new_particles = particle_list[0].copy()
+        for key,item in particle_list[0].data_particles._labels.items():
+            for n in np.arange(1, len(particle_list)):
+                new_particles.data_particles._labels[key]._data.extend(
+                    particle_list[n].data_particles._labels[key]._data)
+        return new_particles

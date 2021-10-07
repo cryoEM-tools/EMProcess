@@ -1,1 +1,1 @@
-from .starfile import load_particles, Particles
+from .starfile import StarFile, Particles
