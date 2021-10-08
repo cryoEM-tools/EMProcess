@@ -350,7 +350,7 @@ class StarFile(object):
     def write(self, filename):
         file_output = []
         for n in self._sorted_group_indices:
-            group = self._data[particles.group_names[n]]
+            group = self._data[self.group_names[n]]
             file_output.append(group._header_lines())
             file_output.append(group._data_lines())
             file_output.append("")
@@ -380,12 +380,12 @@ class Particles(StarFile):
             if data_order is not None:
                 self._data_order = data_order
         
-        try:
-            assert hasattr(self, 'data_particles')
-        except:
-            logging.warning(
-                'no data_particles group found! ' +\
-                'Is you sure this is a particles file?')
+#        try:
+#            assert hasattr(self, 'data_particles')
+#        except:
+#            logging.warning(
+#                'no data_particles group found! ' +\
+#                'Is you sure this is a particles file?')
         return
     
     @property
