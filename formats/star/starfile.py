@@ -1,5 +1,7 @@
+import copy
 import matplotlib.pylab as plt
 import numpy as np
+from collections import OrderedDict
 
 # common star file labels and their type
 LABELS = {
@@ -31,6 +33,8 @@ LABELS = {
     'GroupNumber': str,
     'OriginX': float,
     'OriginY': float,
+    'OriginXAngst': float,
+    'OriginYAngst': float,
     'AngleRot': float,
     'AngleTilt': float,
     'AnglePsi': float,
@@ -346,7 +350,7 @@ class StarFile(object):
     def write(self, filename):
         file_output = []
         for n in self._sorted_group_indices:
-            group = self._data[particles.group_names[n]]
+            group = self._data[self.group_names[n]]
             file_output.append(group._header_lines())
             file_output.append(group._data_lines())
             file_output.append("")
@@ -376,12 +380,12 @@ class Particles(StarFile):
             if data_order is not None:
                 self._data_order = data_order
         
-        try:
-            assert hasattr(self, 'data_particles')
-        except:
-            logging.warning(
-                'no data_particles group found! ' +\
-                'Is you sure this is a particles file?')
+#        try:
+#            assert hasattr(self, 'data_particles')
+#        except:
+#            logging.warning(
+#                'no data_particles group found! ' +\
+#                'Is you sure this is a particles file?')
         return
     
     @property
@@ -410,9 +414,14 @@ class Particles(StarFile):
         return class_counts
     
     def __getitem__(self, iis):
-        new_particles = self.copy()
-        old_data = new_particles._data.pop('data_particles')
-        new_particles._data['data_particles'] = old_data[iis]
+        new_particles = Particles()
+        new_particles.clear()
+        for n, group_name in enumerate(self.group_names):
+            new_particles._add_metadata(group_name, n)
+            if group_name == 'data_particles':
+                new_particles._data[group_name] = self._data[group_name][iis]
+            else:
+                new_particles._data[group_name] = self._data[group_name]
         new_particles.__dict__.update(new_particles._data)
         return new_particles
     
@@ -429,3 +438,11 @@ class Particles(StarFile):
     
     def copy(self):
         return copy.deepcopy(self)
+
+    def concatenate(particle_list):
+        new_particles = particle_list[0].copy()
+        for key,item in particle_list[0].data_particles._labels.items():
+            for n in np.arange(1, len(particle_list)):
+                new_particles.data_particles._labels[key]._data.extend(
+                    particle_list[n].data_particles._labels[key]._data)
+        return new_particles
