@@ -414,9 +414,14 @@ class Particles(StarFile):
         return class_counts
     
     def __getitem__(self, iis):
-        new_particles = self.copy()
-        old_data = new_particles._data.pop('data_particles')
-        new_particles._data['data_particles'] = old_data[iis]
+        new_particles = Particles()
+        new_particles.clear()
+        for n, group_name in enumerate(self.group_names):
+            new_particles._add_metadata(group_name, n)
+            if group_name == 'data_particles':
+                new_particles._data[group_name] = self._data[group_name][iis]
+            else:
+                new_particles._data[group_name] = self._data[group_name]
         new_particles.__dict__.update(new_particles._data)
         return new_particles
     
