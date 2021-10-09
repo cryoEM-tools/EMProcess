@@ -2,17 +2,22 @@ import matplotlib.patches as patches
 import numpy as np
 
 # lightweight box loader
-class box:
-    def __init__(self, x=None, y=None, x_dim=None, y_dim=None):
+class Box:
+    def __init__(self, x=None, y=None, x_dim=None, y_dim=None, box_format='corner'):
         self.x = x
         self.y = y
         self.x_dim = x_dim
         self.y_dim = y_dim
+        self.box_format = box_format
         
     @property
     def loc(self):
-        return (self.x, self.y)
-    
+        if self.box_format == 'corner':
+            loc_point = (self.x, self.y)
+        elif self.box_format == 'center':
+            loc_point = (self.x - self.x_dim/2, self.y - self.y_dim/2)
+        return loc_point
+
     @property
     def arr(self):
         return [self.x, self.y, self.x_dim, self.y_dim]
@@ -24,7 +29,7 @@ class box:
         return rect
 
 
-class boxes:
+class Boxes:
     def __init__(self, filename=None, data=None):
         if filename:
             self.load(filename)
