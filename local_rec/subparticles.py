@@ -58,29 +58,52 @@ def filter_subparticles_distance(subparticles, filter_distance=1.0, ang_pix=1.0)
         Particles object containing particles that are have a nearest neighbor
         distance greater than the filter distance.
     """
-    # shuffle indicies to not introduce orientation bias
-    iis_random = np.arange(int(subparticles._n_particles))
-    np.random.shuffle(iis_random)
+
+    # determine number of particles
+    n_particles = int(subparticles._n_particles)
+    
+    #obtain micrograph names
+    mic_names = np.copy(subparticles.data_particles.MicrographName.data)
+    unique_mic_names = np.unique(mic_names)
+    
+    # initialize list
+    iis_to_filter_total = []
     
     #obtain coordinates
     x_coords = subparticles.data_particles.CoordinateX.data * ang_pix
     y_coords = subparticles.data_particles.CoordinateY.data * ang_pix
-    coords = np.array([x_coords, y_coords]).T[iis_random]
-
-    subparticles_filtered = subparticles.copy()
-    iis_to_filter = np.zeros(shape=(0,))
+    coords = np.array([x_coords, y_coords]).T
     
-    for n in np.arange(subparticles_filtered._n_particles, dtype=int):
-        if not n in iis_to_filter:
-            dists_to_n = np.sqrt(np.sum((coords - coords[n])**2, axis=1))
-            iis_to_filter_tmp = np.where(dists_to_n <= filter_distance)[0]
-            iis_to_filter = np.concatenate([iis_to_filter, iis_to_filter_tmp[iis_to_filter_tmp > n]])
-    iis_to_filter = np.unique(iis_to_filter)
+    # loop over micrographs names
+    for mic_name in unique_mic_names:
+        
+        # find indices of micrograph
+        iis_mic = np.where(mic_names == unique_mic_names)[0]
+
+        # shuffle indices to not introduce orientation bias
+        iis_random = np.arange(iis_mic.shape[0])
+        np.random.shuffle(iis_random)
+        
+        #shuffle coordinates
+        coords_tmp = coords[iis_mic[iis_random]]
+        
+        # initialize filter
+        iis_to_filter = np.zeros(shape=(0,), dtype=int)
+
+        for n in np.arange(coords_tmp.shape[0]):
+            if not n in iis_to_filter:
+                dists_to_n = np.sqrt(np.sum((coords_tmp - coords_tmp[n])**2, axis=1))
+                iis_to_filter_tmp = np.where(dists_to_n <= filter_distance)[0]
+                iis_to_filter = np.concatenate([iis_to_filter, iis_to_filter_tmp[iis_to_filter_tmp > n]])
+        
+        iis_to_filter_total.append(iis_mic[iis_random[np.unique(iis_to_filter)]])
+    
+    iis_to_filter_total = np.concatenate(iis_to_filter_total)
     iis = np.array(
         np.setdiff1d(
-            np.arange(subparticles_filtered._n_particles),
-            iis_to_filter), dtype=int)
-    subparticles_filtered = subparticles_filtered[iis_random[iis]]
+            np.arange(coords.shape[0]), iis_to_filter_total))
+    subparticles_filtered = subparticles.copy()[iis]
+
     return subparticles_filtered
 
 
