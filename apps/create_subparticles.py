@@ -23,7 +23,7 @@ parser.add_argument(
     '--filter_front', action='store_true',
     help='Optionally filter particles to only include front-facing orientations.')
 parser.add_argument(
-    '--filter_distance', default=None,
+    '--filter_distance', type=float, default=None,
     help='Min dist between particles in image in pixels')
 
 

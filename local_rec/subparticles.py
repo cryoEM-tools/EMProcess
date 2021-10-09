@@ -40,13 +40,36 @@ def mask_distance_vec(mask_filename):
     return distance, vec[::-1]
 
 
-def filter_subparticles_distance(subparticles, filter_distance=75, ang_pix=1.0):
+def filter_subparticles_distance(subparticles, filter_distance=1.0, ang_pix=1.0):
+    """ Filters particles whose X,Y coordinates are too close to eachother
+
+    Inputs
+    ----------
+    subparticles : object, EMProcess.Particles, shape=(n_particles, ),
+        Particles object containing particles to filter.
+    filter_distance : float, default=1.0,
+        The minimum allowable distance between subparticles (in Å).
+    ang_pix : float, default=1.0,
+        The pixel size of micrographs (in Å)
+
+    Returns
+    ----------
+    subparticles_filtered : object, EMProcess.Particles, shape=(n_filtered_particles, ),
+        Particles object containing particles that are have a nearest neighbor
+        distance greater than the filter distance.
+    """
+    # shuffle indicies to not introduce orientation bias
+    iis_random = np.arange(int(subparticles._n_particles))
+    np.random.shuffle(iis_random)
+    
+    #obtain coordinates
     x_coords = subparticles.data_particles.CoordinateX.data * ang_pix
     y_coords = subparticles.data_particles.CoordinateY.data * ang_pix
-    coords = np.array([x_coords, y_coords]).T
-    n = 0
+    coords = np.array([x_coords, y_coords]).T[iis_random]
+
     subparticles_filtered = subparticles.copy()
     iis_to_filter = np.zeros(shape=(0,))
+    
     for n in np.arange(subparticles_filtered._n_particles, dtype=int):
         if not n in iis_to_filter:
             dists_to_n = np.sqrt(np.sum((coords - coords[n])**2, axis=1))
@@ -55,8 +78,9 @@ def filter_subparticles_distance(subparticles, filter_distance=75, ang_pix=1.0):
     iis_to_filter = np.unique(iis_to_filter)
     iis = np.array(
         np.setdiff1d(
-            np.arange(subparticles_filtered._n_particles), iis_to_filter), dtype=int)
-    subparticles_filtered = subparticles_filtered[iis]
+            np.arange(subparticles_filtered._n_particles),
+            iis_to_filter), dtype=int)
+    subparticles_filtered = subparticles_filtered[iis_random[iis]]
     return subparticles_filtered
 
 

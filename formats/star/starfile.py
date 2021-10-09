@@ -171,7 +171,7 @@ class MetaData():
     
     @property
     def _n_items(self):
-        return np.average(self._n_label_items)
+        return np.max(self._n_label_items)
     
     @property
     def label_names(self):
