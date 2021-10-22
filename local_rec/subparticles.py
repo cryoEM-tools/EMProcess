@@ -24,10 +24,13 @@ def mask_distance_vec(mask_filename):
         The vector from the origin of the box to the asymmetric unit.
     """
     mask = mrc.open(mask_filename)
-    x,y,z = mask.data.nonzero()
+    z,y,x = mask.data.nonzero()
+    x_center = (x.max() + x.min()) / 2.
+    y_center = (y.max() + y.min()) / 2.
+    z_center = (z.max() + z.min()) / 2.
     particle_center = np.array(
-        [   
-            x.mean(), y.mean(), z.mean()])
+        [
+            x_center, y_center, z_center])
     center_point = np.array([i/2 for i in mask.data.shape])
 
     distance = np.sqrt(
@@ -37,7 +40,7 @@ def mask_distance_vec(mask_filename):
                 for x0,x1 in zip(particle_center, center_point)]))
     vec = (particle_center - center_point)
     vec = vec / np.sqrt(np.sum(vec**2))
-    return distance, vec[::-1]
+    return distance, vec
 
 
 def filter_subparticles_distance(subparticles, filter_distance=75, ang_pix=1.0):
@@ -61,8 +64,8 @@ def filter_subparticles_distance(subparticles, filter_distance=75, ang_pix=1.0):
 
 
 def create_subparticles(
-        particles, symm_mat_set, asymmetric_distance=1.0, ang_pix=None,
-        v0=[0,0,1], filter_front=False):
+        particles, symm_mat_set=None, asymmetric_points=None, asymmetric_distance=1.0,
+        ang_pix=None, v0=[0,0,1], filter_front=False):
     """ Creates subparticles based on applied symmetry.
 
     Inputs
@@ -91,7 +94,11 @@ def create_subparticles(
     """
 
     # generate all rotations
-    asymmetric_points = np.array([R.from_matrix(mat).apply(v0) for mat in symm_mat_set])
+    if not asymmetric_points:
+        asymmetric_points = np.array(
+            [R.from_matrix(mat).apply(v0) for mat in symm_mat_set])
+    else:
+        asymmetric_points /= np.sqrt(np.sum(asymmetric_points**2, axis=1))[:,None]
 
     # generate lists
     subparticles = []
@@ -113,7 +120,7 @@ def create_subparticles(
         
         # create new Particles instance to represent subparticles
         new_particles = Particles.concatenate(
-            [particle for i in np.arange(symm_mat_set.shape[0])])
+            [particle for i in np.arange(asymmetric_points.shape[0])])
         
         # determine the new euler angles as referenced from the v0 vector
         new_rots, new_tilts, new_psis = np.array(
