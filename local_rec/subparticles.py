@@ -2,6 +2,7 @@ import math
 import mrcfile as mrc
 import numpy as np
 import tqdm
+import sys
 from ..formats.star import Particles 
 from scipy.spatial.transform import Rotation as R
 
@@ -39,6 +40,8 @@ def mask_distance_vec(mask_filename):
                 (x0-x1)**2
                 for x0,x1 in zip(particle_center, center_point)]))
     vec = (particle_center - center_point)
+    if np.all(particle_center == center_point):
+        raise
     vec = vec / np.sqrt(np.sum(vec**2))
     return distance, vec
 
@@ -123,10 +126,15 @@ def create_subparticles(
             [particle for i in np.arange(asymmetric_points.shape[0])])
         
         # determine the new euler angles as referenced from the v0 vector
-        new_rots, new_tilts, new_psis = np.array(
-            [
-                R.align_vectors([p], [v0])[0].as_euler('zyz', degrees=True)
-                for p in rotated_points]).T
+        try:
+            new_rots, new_tilts, new_psis = np.array(
+                [
+                    R.align_vectors([p], [v0])[0].as_euler('zyz', degrees=True)
+                    for p in rotated_points]).T
+        except:
+            print("euler angle estimation failed!")
+            print("v0: %s \n rotated_points: %s" % (v0, rotated_points))
+            sys.exit()
         
         # set new angles
         new_particles.data_particles.AngleRot[:] = new_rots

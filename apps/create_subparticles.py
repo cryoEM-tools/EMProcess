@@ -45,7 +45,7 @@ def entry_point():
 
     # generate subparticles
     subparticles = local_rec.create_subparticles(
-        particles, symm_mat_set, asymmetric_distance=dist, ang_pix=args.ang_pix,
+        particles, symm_mat_set=symm_mat_set, asymmetric_distance=dist, ang_pix=args.ang_pix,
         v0=v0, filter_front=args.filter_front)
 
     # filter distance
