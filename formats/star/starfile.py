@@ -171,7 +171,7 @@ class MetaData():
     
     @property
     def _n_items(self):
-        return np.average(self._n_label_items)
+        return np.max(self._n_label_items)
     
     @property
     def label_names(self):
@@ -220,7 +220,7 @@ class MetaData():
             ""]
         header.append(self.name)
         header.append("")
-        header.append("loop_")
+        header.append("loop_ ")
 
         keys = []
         values = []
@@ -231,7 +231,7 @@ class MetaData():
         for n in self._sorted_label_indices:
             label_name = "_rln" + self.labels[values[n]].name
             order = keys[n]
-            new_line = label_name + " #%d" % (order + 1)
+            new_line = label_name + " #%d " % (order + 1)
             header.append(new_line)
         return header
     
