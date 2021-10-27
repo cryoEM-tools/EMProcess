@@ -144,7 +144,7 @@ def create_subparticles(
     """
 
     # generate all rotations
-    if not asymmetric_points:
+    if asymmetric_points is None:
         asymmetric_points = np.array(
             [R.from_matrix(mat).apply(v0) for mat in symm_mat_set])
     else:

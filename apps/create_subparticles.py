@@ -1,4 +1,5 @@
 import argparse
+import numpy as np
 from EMProcess.formats.star import Particles
 from EMProcess import local_rec
 
@@ -11,6 +12,9 @@ parser.add_argument(
     help='Symmetry of particles, defined by RELION. i.e. C1, I1, I2, ...')
 parser.add_argument(
     '--symm_file', type=str, default=None, help="RELION symmetry file.")
+parser.add_argument(
+    '--asymmetric_points', default=None, type=str,
+    help="optionally supply asymmetric points that define location of subparticles")
 parser.add_argument(
     '--mask', type=str,
     help='Filename of mask containing asymmetric unit.')
@@ -34,7 +38,7 @@ def entry_point():
     # obtain symmetry matrix set
     if args.symm_file:
         symm_mat_set = local_rec.load_matrix_symmetry_file(args.symm_file)
-    else:
+    elif args.symm:
         symm_mat_set = local_rec.matrix_from_symmetry(args.symm)
 
     # obtain distance and vector from origin to center of asymmetric unit
@@ -43,13 +47,20 @@ def entry_point():
     # load particles
     particles = Particles(args.particles)
 
-    # generate subparticles
-    subparticles = local_rec.create_subparticles(
-        particles, symm_mat_set=symm_mat_set, asymmetric_distance=dist, ang_pix=args.ang_pix,
-        v0=v0, filter_front=args.filter_front)
+    if args.asymmetric_points is None:
+        # generate subparticles
+        subparticles = local_rec.create_subparticles(
+            particles, symm_mat_set=symm_mat_set, asymmetric_distance=dist,
+            ang_pix=args.ang_pix, v0=v0, filter_front=args.filter_front)
+    else:
+        asymmetric_points = np.loadtxt(args.asymmetric_points)
+        subparticles = local_rec.create_subparticles(
+            particles, asymmetric_points=asymmetric_points,
+            asymmetric_distance=dist, ang_pix=args.ang_pix,
+            filter_front=args.filter_front)
 
     # filter distance
-    if args.filter_distance:
+    if args.filter_distance is not None:
         subparticles = local_rec.filter_subparticles_distance(
             subparticles, filter_distance=args.filter_distance, ang_pix=args.ang_pix)
 
