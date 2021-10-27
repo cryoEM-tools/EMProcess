@@ -2,6 +2,7 @@ import argparse
 import numpy as np
 from EMProcess.formats.star import Particles
 from EMProcess import local_rec
+from EMProcess import maps
 
 parser = argparse.ArgumentParser(
     description='Creates subparticles for local reconstruction')
@@ -42,7 +43,7 @@ def entry_point():
         symm_mat_set = local_rec.matrix_from_symmetry(args.symm)
 
     # obtain distance and vector from origin to center of asymmetric unit
-    dist, v0 = local_rec.mask_distance_vec(args.mask)
+    dist, v0 = maps.mask_distance_vec(args.mask)
 
     # load particles
     particles = Particles(args.particles)

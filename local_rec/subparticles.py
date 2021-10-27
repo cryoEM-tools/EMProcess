@@ -7,45 +7,6 @@ from ..formats.star import Particles
 from scipy.spatial.transform import Rotation as R
 
 
-def mask_distance_vec(mask_filename):
-    """ Calculates the distance and angle of the center of the mask
-    from the mask's origin.
-
-    Inputs
-    ----------
-    mask_filename : str,
-        The name of the .mrc file containing a mask of a single asymmetric unit.
-        The distance and vector are used to create subparticles.
-
-    Returns
-    ----------
-    distance : float,
-        The distance from the center of the box to the asymmetric unit (in pixels)
-    vec : nd.array, shape=(3, )
-        The vector from the origin of the box to the asymmetric unit.
-    """
-    mask = mrc.open(mask_filename)
-    z,y,x = mask.data.nonzero()
-    x_center = (x.max() + x.min()) / 2.
-    y_center = (y.max() + y.min()) / 2.
-    z_center = (z.max() + z.min()) / 2.
-    particle_center = np.array(
-        [
-            x_center, y_center, z_center])
-    center_point = np.array([i/2 for i in mask.data.shape])
-
-    distance = np.sqrt(
-        np.sum( 
-            [   
-                (x0-x1)**2
-                for x0,x1 in zip(particle_center, center_point)]))
-    vec = (particle_center - center_point)
-    if np.all(particle_center == center_point):
-        raise
-    vec = vec / np.sqrt(np.sum(vec**2))
-    return distance, vec
-
-
 def filter_subparticles_distance(subparticles, filter_distance=1.0, ang_pix=1.0):
     """ Filters particles whose X,Y coordinates are too close to eachother
 
