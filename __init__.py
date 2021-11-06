@@ -1,2 +1,2 @@
-from . import local_rec
+from . import local_rec, maps
 from .formats.star import StarFile, Particles
