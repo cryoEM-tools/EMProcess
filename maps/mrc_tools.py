@@ -86,6 +86,20 @@ def symmetry_expand_density(
     return
 
 
+def current_box_dims(map_density):
+    if type(map_density) is mrc.mrcfile.MrcFile:
+        x_dim = map_density.header['mx']
+        y_dim = map_density.header['my']
+        z_dim = map_density.header['mz']
+    elif type(map_density) is str:
+        with mrc.open(map_density) as map_density:
+            x_dim = map_density.header['mx']
+            y_dim = map_density.header['my']
+            z_dim = map_density.header['mz']
+    box_dims = np.array([x_dim, y_dim, z_dim])
+    return box_dims
+
+
 def find_box_dims(map_density):
     """Returns the box dimensions of density within a specified map."""
     if type(map_density) is mrc.mrcfile.MrcFile:
@@ -106,9 +120,25 @@ def find_box_dims(map_density):
     return box_dims
 
 
+def trim_map_by_value(
+        map_filename, value, output_name='map_trimmed.mrc', **kwargs):
+    with mrc.open(map_filename) as map_density:
+        mask_iis = map_density.data >= value
+
+        with mrc.new(output_name, **kwargs) as mrc_output:
+            mrc_output_data = np.zeros(map_density.data.shape, dtype='<f4')
+            mrc_output_data[mask_iis] = map_density.data[mask_iis]
+            mrc_output.set_data(mrc_output_data)
+            mrc_output.voxel_size = float(map_density.voxel_size['x'])
+            mrc_output.update_header_from_data()
+            mrc_output.update_header_stats()
+    return
+
+
 def extract_from_map(
         map_filename, distance_from_origin=None, vec=None, extraction_center=None,
-        box_dims=None, mask_filename=None, output_name='extracted_map.mrc', **kwargs):
+        box_dims=None, mask_filename=None, recenter=True, output_name='extracted_map.mrc',
+        **kwargs):
     """ Extracts a portion of density from an .mrc file
     
     Inputs
@@ -149,8 +179,11 @@ def extract_from_map(
             z_dim, y_dim, x_dim = map_density.data.shape
             map_dim = np.array([x_dim, y_dim, z_dim])
             map_center = map_dim / 2
-            extraction_center = map_center + vec*distance_from_origin
-        
+            if recenter:
+                extraction_center = map_center + vec*distance_from_origin
+            else:
+                extraction_center = map_center
+
         # determine box dimensions
         if box_dims is None:
             if mask_filename is None:
@@ -187,6 +220,9 @@ def extract_from_map(
             map_data[mask_iis] = map_density.data[mask_iis]
         else:
             map_data = map_density.data
+
+        print(new_map_start_stop, old_map_start_stop)
+        print(box_dims)
 
         # write new map        
         with mrc.new(output_name, **kwargs) as mrc_output:
