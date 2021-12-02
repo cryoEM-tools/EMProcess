@@ -32,6 +32,12 @@ parser.add_argument(
 parser.add_argument(
     '--only_masked', action='store_true', default=False,
     help='extract only masked region values')
+parser.add_argument(
+    '--keep_dims', action='store_true', default=False,
+    help='keep the original mask box dimensions.')
+parser.add_argument(
+    '--overwrite', action='store_true', default=True,
+    help='Will overwrite filenames')
 
 
 def entry_point():
@@ -58,6 +64,11 @@ def entry_point():
         if args.max_dim:
             box_dims = box_dims.max()
 
+    recenter = True
+    if args.keep_dims:
+        box_dims = maps.current_box_dims(args.input_name)
+        recenter = False
+
     # optionally extract only masked region
     if args.only_masked:
         mask_filename = args.mask
@@ -68,7 +79,8 @@ def entry_point():
     maps.extract_from_map(
         map_filename=args.input_name, distance_from_origin=dist,
         vec=v0, box_dims=box_dims, extraction_center=extraction_center,
-        output_name=args.output_name, mask_filename=mask_filename)
+        output_name=args.output_name, mask_filename=mask_filename,
+        recenter=recenter, overwrite=args.overwrite)
 
 
 if __name__=='__main__':
