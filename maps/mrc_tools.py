@@ -157,10 +157,11 @@ def extract_from_map(
                 box_dims = find_box_dims(map_density)
             else:
                 box_dims = find_box_dims(mask_filename)
-        elif type(box_dims) is int:
-            box_dims = np.array([box_dims, box_dims, box_dims])
+        elif type(box_dims) is int or type(box_dims) is str:
+            box_dims = np.array([box_dims, box_dims, box_dims], dtype=int)
         elif type(box_dims) is list:
-            box_dims = np.array(box_dims)
+            box_dims = np.array(box_dims, dtype=int)
+        print(box_dims)
         box_edges = box_dims / 2
         extraction_corner = extraction_center - box_edges
 

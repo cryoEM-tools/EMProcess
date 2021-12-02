@@ -33,6 +33,7 @@ parser.add_argument(
     '--only_masked', action='store_true', default=False,
     help='extract only masked region values')
 
+
 def entry_point():
 
     # parse arguments
@@ -47,7 +48,10 @@ def entry_point():
     else:
         # obtain distance and vector from origin to center of asymmetric unit
         dist, v0 = maps.mask_distance_vec(args.mask)
-        box_dims = maps.find_box_dims(args.mask)
+        if args.box_dims is None:
+            box_dims = maps.find_box_dims(args.mask)
+        else:
+            box_dims = args.box_dims
         extraction_center = None
 
         # optionally make box cubic with largest box dimension
