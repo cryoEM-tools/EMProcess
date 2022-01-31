@@ -175,9 +175,9 @@ def extract_from_map(
         voxel_size = float(map_density.voxel_size['x'])
         
         # determine extraction center
+        z_dim, y_dim, x_dim = map_density.data.shape
+        map_dim = np.array([x_dim, y_dim, z_dim])
         if extraction_center is None:
-            z_dim, y_dim, x_dim = map_density.data.shape
-            map_dim = np.array([x_dim, y_dim, z_dim])
             map_center = map_dim / 2
             if recenter:
                 extraction_center = map_center + vec*distance_from_origin
@@ -199,10 +199,11 @@ def extract_from_map(
 
         # create initial indices for extraction and placement of voxels        
         old_map_start_stop = np.array(
-            np.around(
-                np.vstack([extraction_corner, (extraction_corner + box_dims)]).T, 0), dtype=int)
+            np.ceil(
+                np.vstack(
+                    [extraction_corner, (extraction_corner + box_dims)]).T), dtype=int)
         new_map_start_stop = np.array([np.zeros(3), box_dims], dtype=int).T
-        
+
         # clip bottom of new map
         new_map_start_stop[old_map_start_stop[:,0] < 0, 0] -= old_map_start_stop[old_map_start_stop[:,0] < 0, 0]
 
@@ -221,8 +222,9 @@ def extract_from_map(
         else:
             map_data = map_density.data
 
-        print(new_map_start_stop, old_map_start_stop)
-        print(box_dims)
+        # debugging
+        #print(new_map_start_stop, old_map_start_stop)
+        #print(box_dims, map_density.data.shape)
 
         # write new map        
         with mrc.new(output_name, **kwargs) as mrc_output:
