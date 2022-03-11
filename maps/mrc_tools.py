@@ -198,6 +198,11 @@ def extract_from_map(
         box_edges = box_dims / 2
         extraction_corner = extraction_center - box_edges
 
+#        print("\n")
+#        print(extraction_corner, box_dims)
+#        print(extraction_corner + box_dims)
+#        print("\n")
+
         # create initial indices for extraction and placement of voxels        
         old_map_start_stop = np.array(
             np.ceil(
@@ -224,8 +229,8 @@ def extract_from_map(
             map_data = map_density.data
 
         # debugging
-        #print(new_map_start_stop, old_map_start_stop)
-        #print(box_dims, map_density.data.shape)
+#        print(new_map_start_stop, old_map_start_stop)
+#        print(box_dims, map_density.data.shape)
 
         # write new map        
         with mrc.new(output_name, **kwargs) as mrc_output:
