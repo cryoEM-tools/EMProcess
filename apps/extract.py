@@ -49,15 +49,15 @@ def entry_point():
     if args.mask is None:
         dist = args.distance_from_origin
         v0 = args.vec
-        box_dims = args.box_dims
-        extraction_center = args.extraction_center
+        box_dims = np.array(args.box_dims, dtype=int)
+        extraction_center = np.array(args.extraction_center, dtype=int)
     else:
         # obtain distance and vector from origin to center of asymmetric unit
         dist, v0 = maps.mask_distance_vec(args.mask)
         if args.box_dims is None:
             box_dims = maps.find_box_dims(args.mask)
         else:
-            box_dims = args.box_dims
+            box_dims = np.array(args.box_dims, dtype=int)
         extraction_center = None
 
         # optionally make box cubic with largest box dimension
