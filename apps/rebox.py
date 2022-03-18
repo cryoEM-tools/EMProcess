@@ -11,10 +11,13 @@ parser.add_argument(
     '--output_name', type=str, default=None,
     help="output filename to optionally store extracted mask.")
 parser.add_argument(
-    '--max_dim', action='store_true', default=True,
+    '--max_dim', type=bool, default=True,
     help="optionally use the maximum dimension for box size")
 parser.add_argument(
     '--padding', type=int, default=0, help="number of pixels to extend box")
+parser.add_argument(
+    '--query', action='store_true', default=False,
+    help="don't save box, only query box dimensions, vector, and center loc")
 parser.add_argument(
     '--overwrite', action='store_true', default=False,
     help="optionally overwrite extraction mask")
@@ -29,14 +32,16 @@ def entry_point():
     
     dist,vec = maps.mask_distance_vec(mask_filename)
     box_dims = maps.find_box_dims(mask_filename)
+    print("\n\nOriginal box dimensions: %s\n" % box_dims)
     if args.max_dim:
         max_dim = np.max(box_dims)
         box_dims = np.array([max_dim]*3, dtype=int)
 
     print('\n\ndistance: %0.3f\nvec: %s' % (dist, vec))
-    print('box_dims: %s + %d' % (box_dims, args.padding))
+    print('box_dims: %s + %d = %s' % (box_dims, args.padding, box_dims+args.padding))
+    print('center location: %s\n' % (dist*vec))
 
-    if args.output_name is not None:
+    if args.output_name is not None and not args.query:
         new_box_dims = box_dims + args.padding
         print('\n saving new file as %s with new box %s\n...\n' % (args.output_name, new_box_dims))
         maps.extract_from_map(

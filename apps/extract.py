@@ -79,7 +79,7 @@ def entry_point():
         mask_filename = None
 
     # extract map
-    print(dist, v0, box_dims, extraction_center)
+    #print(dist, v0, box_dims, extraction_center)
     maps.extract_from_map(
         map_filename=args.input_name, distance_from_origin=dist,
         vec=v0, box_dims=box_dims, extraction_center=extraction_center,
