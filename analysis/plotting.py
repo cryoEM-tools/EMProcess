@@ -1,13 +1,13 @@
 import numpy as np
 import matplotlib.pylab as plt
-
+from scipy import ndimage
 
 def norm_image(img):
     return 255 * img / img.max()
 
 
-def plot_img(img, color_map='gray', gaussian_filter_width=None, **kwargs):
-    fig = plt.figure(figsize=(16,16))
+def plot_img(img, figsize=(12,12), color_map='gray', gaussian_filter_width=None, **kwargs):
+    fig = plt.figure(figsize=figsize)
     if gaussian_filter_width is not None:
         img = ndimage.gaussian_filter(img, sigma=gaussian_filter_width)
     fig = plt.imshow(img, cmap=plt.get_cmap(color_map), interpolation='nearest',
