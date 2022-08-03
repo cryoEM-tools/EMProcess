@@ -1,6 +1,28 @@
 import numpy as np
 import matplotlib.pylab as plt
 
+
+def norm_image(img):
+    return 255 * img / img.max()
+
+
+def plot_img(img, color_map='gray', gaussian_filter_width=None, **kwargs):
+    fig = plt.figure(figsize=(16,16))
+    if gaussian_filter_width is not None:
+        img = ndimage.gaussian_filter(img, sigma=gaussian_filter_width)
+    fig = plt.imshow(img, cmap=plt.get_cmap(color_map), interpolation='nearest',
+        aspect='auto', **kwargs)
+    return fig
+
+
+def plot_particle_centers(img, particles, s=100, **kwargs):
+    fig = plot_img(img, **kwargs)
+    fig = plt.scatter(
+        particles.data_particles.CoordinateX.data,
+        particles.data_particles.CoordinateY.data, s=s, c='r')
+    return fig
+
+
 def plot_fig(
         xs, ys, ax=None, label=None, color='black', bar=False, norm_ys=True, alpha=1.0, **kwargs):
     """Wrapper for matplotlib plotting
