@@ -175,7 +175,7 @@ class MetaData():
     
     @property
     def label_names(self):
-        return [name for name in self.labels.keys()]
+        return [name for name in self._label_order.values()]
     
     @property
     def labels(self):
@@ -196,6 +196,10 @@ class MetaData():
                 (np.unique(self._n_label_items).shape[0] == 0):
             consistent = True
         return consistent
+
+    @property
+    def _last_label_num(self):
+        return max([k for k in self._label_order.keys()])
     
     @property
     def _sorted_label_indices(self):
@@ -205,9 +209,13 @@ class MetaData():
         self._labels = OrderedDict()
         self._label_order = OrderedDict()
 
-    def _add_label(self, label_name, order_num):
+    def _add_label(self, label_name, order_num=None, data=None):
+        if order_num is None:
+            order_num = self._last_label_num + 1
         self._labels[label_name] = Label(label_name)
         self._label_order[order_num] = label_name
+        if data is not None:
+            self._labels[label_name]._data = list(data)
         self.__dict__.update(self._labels)
 
     def copy(self):
