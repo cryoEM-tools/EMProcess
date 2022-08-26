@@ -3,38 +3,45 @@ import numpy as np
 from EMProcess.formats.star import Particles
 from EMProcess import local_rec
 from EMProcess import maps
+import sys
 
-parser = argparse.ArgumentParser(
-    description='Creates subparticles for local reconstruction')
-parser.add_argument(
-    '--particles', type=str, help='Particles filename to create subparticles')
-parser.add_argument(
-    '--symm', type=str,
-    help='Symmetry of particles, defined by RELION. i.e. C1, I1, I2, ...')
-parser.add_argument(
-    '--symm_file', type=str, default=None, help="RELION symmetry file.")
-parser.add_argument(
-    '--asymmetric_points', default=None, type=str,
-    help="optionally supply asymmetric points that define location of subparticles")
-parser.add_argument(
-    '--mask', type=str,
-    help='Filename of mask containing asymmetric unit.')
-parser.add_argument(
-    '--ang_pix', type=float, default=1.0, help='Pixel size in Å')
-parser.add_argument(
-    '--output', type=str, default='subparticles.star',
-    help='Output filename for subparticles')
-parser.add_argument(
-    '--filter_front', action='store_true',
-    help='Optionally filter particles to only include front-facing orientations.')
-parser.add_argument(
-    '--filter_distance', type=float, default=None,
-    help='Min dist between particles in image in pixels')
+def process_command_line(argv):
+
+    parser = argparse.ArgumentParser(
+        description='Creates subparticles for local reconstruction')
+    parser.add_argument(
+        '--particles', type=str, help='Particles filename to create subparticles')
+    parser.add_argument(
+        '--symm', type=str,
+        help='Symmetry of particles, defined by RELION. i.e. C1, I1, I2, ...')
+    parser.add_argument(
+        '--symm_file', type=str, default=None, help="RELION symmetry file.")
+    parser.add_argument(
+        '--asymmetric_points', default=None, type=str,
+        help="optionally supply asymmetric points that define location of subparticles")
+    parser.add_argument(
+        '--mask', type=str,
+        help='Filename of mask containing asymmetric unit.')
+    parser.add_argument(
+        '--ang_pix', type=float, default=1.0, help='Pixel size in Å')
+    parser.add_argument(
+        '--output', type=str, default='subparticles.star',
+        help='Output filename for subparticles')
+    parser.add_argument(
+        '--filter_front', action='store_true',
+        help='Optionally filter particles to only include front-facing orientations.')
+    parser.add_argument(
+        '--filter_distance', type=float, default=None,
+        help='Min dist between particles in image in pixels')
+
+    args = parser.parse_args(argv)
+
+    return
 
 
-def entry_point():
+def main(argv):
 
-    args = parser.parse_args()
+    args = process_command_line(argv)
 
     # obtain symmetry matrix set
     if args.symm_file:
@@ -69,4 +76,4 @@ def entry_point():
     subparticles.write(args.output)
 
 if __name__=='__main__':
-    entry_point()
+    sys.exit(main(sys.argv))

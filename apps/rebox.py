@@ -1,32 +1,38 @@
 import argparse
 import numpy as np
+import sys
 from EMProcess import maps
 
-parser = argparse.ArgumentParser(
-    description='Extracts boxed density from maps')
-parser.add_argument(
-    '--mask', type=str, default=None,
-    help="Mask filename to use for determining box location and size.")
-parser.add_argument(
-    '--output_name', type=str, default=None,
-    help="output filename to optionally store extracted mask.")
-parser.add_argument(
-    '--max_dim', type=bool, default=True,
-    help="optionally use the maximum dimension for box size")
-parser.add_argument(
-    '--padding', type=int, default=0, help="number of pixels to extend box")
-parser.add_argument(
-    '--query', action='store_true', default=False,
-    help="don't save box, only query box dimensions, vector, and center loc")
-parser.add_argument(
-    '--overwrite', action='store_true', default=False,
-    help="optionally overwrite extraction mask")
+
+def process_command_line(argv):
+    parser = argparse.ArgumentParser(
+        description='Extracts boxed density from maps')
+    parser.add_argument(
+        '--mask', type=str, default=None,
+        help="Mask filename to use for determining box location and size.")
+    parser.add_argument(
+        '--output_name', type=str, default=None,
+        help="output filename to optionally store extracted mask.")
+    parser.add_argument(
+        '--max_dim', type=bool, default=True,
+        help="optionally use the maximum dimension for box size")
+    parser.add_argument(
+        '--padding', type=int, default=0, help="number of pixels to extend box")
+    parser.add_argument(
+        '--query', action='store_true', default=False,
+        help="don't save box, only query box dimensions, vector, and center loc")
+    parser.add_argument(
+        '--overwrite', action='store_true', default=False,
+        help="optionally overwrite extraction mask")
+
+    args = parser.parse_args(argv)
+
+    return args
 
 
+def main(argv):
 
-def entry_point():
-
-    args = parser.parse_args()
+    args = process_command_line(argv)
     
     mask_filename = args.mask
     
@@ -50,6 +56,5 @@ def entry_point():
             overwrite=args.overwrite)
 
 
-
 if __name__=='__main__':
-    entry_point()
+    sys.exit(main(sys.argv))

@@ -5,13 +5,13 @@ import argparse
 def identify_app(argv):
 
     parser = argparse.ArgumentParser(
-        prog='emprocess',
+        prog='EMProcess',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        description="Main entry point for emprocess apps.")
+        description="Main entry point for EMProcess apps.")
 
     parser.add_argument(
         "appname",
-        choices={'create_subparticles'},
+        choices={'create_subparticles', 'extract', 'formatting', 'mask', 'rebox'},
         help="Name of the application.")
 
     parser.add_argument(
@@ -26,8 +26,16 @@ def identify_app(argv):
 
     args = parser.parse_args(argv[1:])
 
-    if args.appname == 'cluster':
-        from emprocess.apps.create_subparticles import main
+    if args.appname == 'create_subparticles':
+        from EMProcess.apps.create_subparticles import main
+    elif args.appname == 'extract':
+        from EMProcess.apps.extract import main
+    elif args.appname == 'formatting':
+        from EMProcess.apps.formatting import main
+    elif args.appname == 'mask':
+        from EMProcess.apps.mask import main
+    elif args.appname == 'rebox':
+        from EMProcess.apps.rebox import main
 
     args.main = main
     args.appargs.extend(helpstack)
@@ -39,12 +47,13 @@ def main(argv=None):
 
     args = identify_app(argv)
 
+    print(args.main)
+    print(argv)
+
     try:
         args.main(args.appargs)
     except Exception as e:
-        message = ("An unexpected error has occurred; please consider filing "
-                   "an issue at our issue tracker:\n"
-                   "https://github.com/bowman-lab/enspara/issues")
+        message = ("An unexpected error has occurred")
         print(message, file=sys.stderr)
         raise
 
