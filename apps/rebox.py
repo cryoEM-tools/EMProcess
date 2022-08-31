@@ -8,10 +8,10 @@ def process_command_line(argv):
     parser = argparse.ArgumentParser(
         description='Extracts boxed density from maps')
     parser.add_argument(
-        '--mask', type=str, default=None,
+        '-i', '--mask', type=str, default=None,
         help="Mask filename to use for determining box location and size.")
     parser.add_argument(
-        '--output_name', type=str, default=None,
+        '-o', '--output_name', type=str, default=None,
         help="output filename to optionally store extracted mask.")
     parser.add_argument(
         '--max_dim', type=bool, default=True,

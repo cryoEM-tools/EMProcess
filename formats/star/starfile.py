@@ -1,6 +1,7 @@
 import copy
 import matplotlib.pylab as plt
 import numpy as np
+import sys
 from collections import OrderedDict
 
 # common star file labels and their type
@@ -45,8 +46,64 @@ LABELS = {
     'OriginalParticleName': str,
     'NrOfSignificantSamples': int,
     'NrOfFrames': int,
-    'MaxValueProbDistribution': float
+    'MaxValueProbDistribution': float,
+    'AutopickFigureOfMerit': float
 }
+
+
+def join_stars(star_list, add_filename=False):
+    """Joins star files into a single star file.
+
+    Inputs
+    ----------
+    star_list : array-like, (str or StarFile), shape=(n_filenames,),
+        The STAR objects or filenames to join.
+    
+    """
+    stars = []
+    for s in star_list:
+        if (type(s) is str) or (type(s) is np.str_):
+            stars.append(StarFile(s))
+        elif type(s) is EMProcess.formats.star.starfile.StarFile:
+            stars.append(s)
+        else:
+            raise
+
+    # ensure the same groups and labels
+    group_names = stars[0].group_names
+    labels_per_group = [stars[0].__getattribute__(g).label_names for g in group_names]
+    for s in stars:
+        for n,g in enumerate(group_names):
+            assert g in s.group_names
+            assert np.all(np.sort(labels_per_group[n]) == np.sort(s.__getattribute__(g).label_names))
+
+    # extract star data and concatenate
+    stars_data = [
+        [
+            [
+                s.__getattribute__(g).labels[l]._data
+                for l in labels_per_group[n]
+            for g in group_names]]
+        for s in stars]
+    stars_data = np.concatenate(stars_data, axis=2)
+
+    new_star = StarFile(groups=group_names, label_names=labels_per_group, data=stars_data)
+
+    # optionally add the filename data came from as a new parameter to each group
+    if add_filename:
+        for s in star_list:
+            assert (type(s) is str) or (type(s) is np.str_)
+        lengths = [[s.__getattribute__(g)._n_items for s in stars] for g in group_names]
+        filenames = [
+            np.concatenate([[s]*l for s,l in zip(star_list, lengths_inner)])
+            for lengths_inner in lengths]
+        for n,g in enumerate(group_names):
+            new_star.__getattribute__(g)._add_label('Filename', data=filenames[n])
+        
+    return new_star
+    
+        
+
 
 class Label():
     """Label class
@@ -126,12 +183,18 @@ class MetaData():
     label_names : list, shape=(n_labels)
         The name of each label.
     """
-    def __init__(self, group_name, labels=None, label_order=None):
+    def __init__(self, group_name, labels=None, label_order=None, label_names=None, data=None):
         self.name = group_name
         self._clear()
         if labels:
             self._labels = labels
             self.__dict__.update(self._labels)
+        elif (label_names is not None) and (data is not None):
+            for n,l in enumerate(label_names):
+                self._labels[l] = Label(l,data=data[n])
+                self._label_order[n] = l
+            self.__dict__.update(self._labels)
+
         if label_order:
             self._label_order = label_order
         self._assert_consistent()
@@ -253,6 +316,7 @@ class MetaData():
             elif label.type is int:
                 new_line.append('{0: >12}'.format(value))
             elif label.type is float:
+                value = float(value)
                 if np.abs(value) >= 100000:
                     new_line.append('{0: >#012.6e}'.format(value))
                 else:
@@ -278,12 +342,25 @@ class StarFile(object):
     ----------
     
     """
-    def __init__(self, input_star=None):
+    def __init__(
+            self, input_star=None, groups=None, labels=None,
+            label_names=None, data=None):
         if input_star:
             self.read(input_star)
         else:
             self.clear()
-            
+
+        # if data is input, fill star file
+        if (groups is not None) and (labels is not None):
+            for n,group in enumerate(groups):
+                self._data[group] = MetaData(groups[n], labels=labels[n])
+            self.__dict__.update(self._data)
+        elif (groups is not None) and (label_names is not None) and (data is not None): 
+            for n,group in enumerate(groups):
+                self._data[group] = MetaData(groups[n], label_names=label_names[n], data=data[n])
+                self._data_order[n] = groups[n]
+            self.__dict__.update(self._data)
+
     def __repr__(self):
         output = "StarFile(n_groups=%d)" % self._n_groups
         return output

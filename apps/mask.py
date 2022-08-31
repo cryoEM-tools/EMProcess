@@ -8,12 +8,12 @@ def process_command_line(argv):
     parser = argparse.ArgumentParser(
         description='Extracts boxed density from maps')
     parser.add_argument(
-        '--input_name', type=str, help='Input map filename')
+        '-i', '--input_name', type=str, help='Input map filename')
     parser.add_argument(
-        '--trim_value', type=float,
+        '-t', '--trim_value', type=float,
         help="Values less than the trim_value are set to zero..")
     parser.add_argument(
-        '--output_name', type=str, default='mask.mrc',
+        '-o', '--output_name', type=str, default='mask.mrc',
         help='The output map filename.')
 
     print(argv)
