@@ -35,6 +35,9 @@ def process_command_line(argv):
         '--only_masked', action='store_true', default=False,
         help='extract only masked region values')
     parser.add_argument(
+        '--flat_mask', action='store_true', default=False,
+        help='Apply a flat-mask to a map by multiplying mask values to map.')
+    parser.add_argument(
         '--keep_dims', action='store_true', default=False,
         help='keep the original mask box dimensions.')
     parser.add_argument(
@@ -90,7 +93,7 @@ def main(argv):
         map_filename=args.input_name, distance_from_origin=dist,
         vec=v0, box_dims=box_dims, extraction_center=extraction_center,
         output_name=args.output_name, mask_filename=mask_filename,
-        recenter=recenter, overwrite=args.overwrite)
+        recenter=recenter, flat_mask=args.flat_mask, overwrite=args.overwrite)
 
 
 if __name__=='__main__':

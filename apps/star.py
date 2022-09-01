@@ -25,9 +25,6 @@ def process_command_line(argv):
         '-o', '--output_name', type=str, default='new_star.star',
         help='The output star filename.')
 
-    print("\n\n")
-    print(argv)
-    print("\n\n")
     args = parser.parse_args(argv)
 
     return args

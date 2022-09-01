@@ -1,5 +1,9 @@
+import logging
 import mrcfile as mrc
 import numpy as np
+
+
+logging.basicConfig()
 
 
 def mask_distance_vec(mask_filename):
@@ -138,7 +142,7 @@ def trim_map_by_value(
 def extract_from_map(
         map_filename, distance_from_origin=None, vec=None, extraction_center=None,
         box_dims=None, mask_filename=None, recenter=True, output_name='extracted_map.mrc',
-        **kwargs):
+        flat_mask=True, **kwargs):
     """ Extracts a portion of density from an .mrc file
     
     Inputs
@@ -161,10 +165,16 @@ def extract_from_map(
     output_name : str, default='extracted_map.mrc',
         The output filename for the extracted mrc file.
     """
+
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.INFO)
+
     if mask_filename is not None:
         with mrc.open(mask_filename) as mask:
             mask_shape = mask.data.shape
             mask_iis = mask.data.nonzero()
+            if not flat_mask:
+                mask_data = mask.data[mask_iis]
 
     with mrc.open(map_filename) as map_density:
 
@@ -194,10 +204,10 @@ def extract_from_map(
             box_dims = np.array([box_dims, box_dims, box_dims], dtype=int)
         elif type(box_dims) is list:
             box_dims = np.array(box_dims, dtype=int)
-        print(box_dims)
         box_edges = box_dims / 2
         extraction_corner = extraction_center - box_edges
 
+#        DEBUGGING
 #        print("\n")
 #        print(extraction_corner, box_dims)
 #        print(extraction_corner + box_dims)
@@ -224,15 +234,19 @@ def extract_from_map(
         # optionally take only masked region        
         if mask_filename is not None:
             map_data = np.zeros(shape=map_density.data.shape, dtype='<f4')
-            map_data[mask_iis] = map_density.data[mask_iis]
+            if not flat_mask:
+                map_data[mask_iis] = map_density.data[mask_iis]*mask_data
+            else:
+                map_data[mask_iis] = map_density.data[mask_iis]
         else:
             map_data = map_density.data
 
-        # debugging
+        # DEBUGGING
 #        print(new_map_start_stop, old_map_start_stop)
 #        print(box_dims, map_density.data.shape)
-
-        # write new map        
+        logger.info("\n    writing new map: %s" % output_name)
+        logger.info("\n    box dims: %s" % box_dims)
+        # write new map
         with mrc.new(output_name, **kwargs) as mrc_output:
             mrc_output.set_data(np.zeros(shape=(box_dims[2], box_dims[1], box_dims[0]), dtype='<f4'))
             mrc_output.voxel_size = voxel_size
