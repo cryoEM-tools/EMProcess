@@ -58,7 +58,15 @@ def join_stars(star_list, add_filename=False):
     ----------
     star_list : array-like, (str or StarFile), shape=(n_filenames,),
         The STAR objects or filenames to join.
-    
+    add_filename : bool, default=False,
+        Optionally add the file that the data came from as a new entry
+        in each group.
+
+    Returns
+    ----------
+    new_star : StarFile, obj,
+        A StarFile object containing the concatenated entries for each
+        group in the star_list.    
     """
     stars = []
     for s in star_list:
@@ -101,9 +109,34 @@ def join_stars(star_list, add_filename=False):
             new_star.__getattribute__(g)._add_label('Filename', data=filenames[n])
         
     return new_star
-    
-        
 
+
+def append_particles(particles0, particles1):
+    """Appends non-redundant labels from particles 1 to particles 0.
+
+    Inputs
+    ----------
+    particles0 : Particles, shape=(n_particles,),
+        Particle object to append new labels to.
+    particles1 : Particles, shape=(n_particles,),
+        Particle object contining unique labels to append to particles0.
+    """
+
+    # obtain label names
+    label_names0 = particles0.data_particles.label_names
+    label_names1 = particles1.data_particles.label_names
+
+    # determine unique labels
+    labels_to_add = np.setdiff1d(label_names1, label_names0)
+
+    # append to new particle set
+    new_particles = particles0.copy()
+    for l in labels_to_add:
+        new_particles.data_particles._add_label(
+            l, data=particles1.data_particles._labels[l].data)
+
+    return new_particles
+        
 
 class Label():
     """Label class

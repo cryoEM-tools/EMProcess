@@ -38,7 +38,7 @@ def process_command_line(argv):
         '--keep_dims', action='store_true', default=False,
         help='keep the original mask box dimensions.')
     parser.add_argument(
-        '--overwrite', action='store_true', default=True,
+        '--overwrite', action='store_true', default=False,
         help='Will overwrite filenames')
 
     args = parser.parse_args(argv)

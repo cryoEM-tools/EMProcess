@@ -11,7 +11,7 @@ def identify_app(argv):
 
     parser.add_argument(
         "appname",
-        choices={'create_subparticles', 'extract', 'formatting', 'mask', 'rebox'},
+        choices={'create_subparticles', 'extract', 'formatting', 'mask', 'rebox', 'star'},
         help="Name of the application.")
 
     parser.add_argument(
@@ -24,7 +24,7 @@ def identify_app(argv):
             argv.remove(h)
             helpstack.append(h)
 
-    args = parser.parse_args(argv[1:])
+    args = parser.parse_args([argv[1]])
 
     if args.appname == 'create_subparticles':
         from EMProcess.apps.create_subparticles import main
@@ -36,6 +36,8 @@ def identify_app(argv):
         from EMProcess.apps.mask import main
     elif args.appname == 'rebox':
         from EMProcess.apps.rebox import main
+    elif args.appname == 'star':
+        from EMProcess.apps.star import main
 
     args.main = main
     args.appargs.extend(helpstack)
@@ -47,11 +49,11 @@ def main(argv=None):
 
     args = identify_app(argv)
 
-    print(args.main)
-    print(argv)
-
     try:
-        args.main(args.appargs)
+        if len(argv[2:]) == 0:
+            args.main(['-h'])
+        else:
+            args.main(argv[2:])
     except Exception as e:
         message = ("An unexpected error has occurred")
         print(message, file=sys.stderr)
