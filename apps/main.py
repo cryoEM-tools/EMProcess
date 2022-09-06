@@ -48,7 +48,6 @@ def identify_app(argv):
 def main(argv=None):
 
     args = identify_app(argv)
-    print(argv)
 
     try:
         if len(argv[2:]) == 0:
