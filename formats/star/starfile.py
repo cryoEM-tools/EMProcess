@@ -10,28 +10,35 @@ LABELS = {
     'OpticsGroup': int,
     'MtfFileName': str, 
     'MicrographOriginalPixelSize': float,
+    'Voltage': float,
+    'SphericalAberration': float,
+    'AmplitudeContrast': float,
     'ImagePixelSize': float,
     'ImageSize': int,
     'ImageDimensionality' : int,
-    'Voltage': float,
-    'DefocusU': float,
-    'DefocusV': float,
-    'DefocusAngle': float,
-    'SphericalAberration': float,
-    'DetectorPixelSize': float,
-    'CtfFigureOfMerit': float,
-    'Magnification': float,
-    'AmplitudeContrast': float,
-    'ImageName': str,
-    'OriginalName': str,
-    'CtfImage': str,
+    'BeamTiltX' : float,
+    'BeamTiltY' : float,
+    'CtfDataAreCtfPremultiplied' : int,
     'CoordinateX': float,
     'CoordinateY': float,
     'CoordinateZ': float,
-    'NormCorrection': float,
+    'ImageName': str,
     'MicrographName': str,
-    'GroupName': str,
+    'CtfMaxResolution' : float,
+    'DefocusU': float,
+    'DefocusV': float,
+    'DefocusAngle': float,
+    'CtfBfactor' : float, 
+    'CtfScalefactor' : float, 
+    'PhaseShift' : float,
     'GroupNumber': str,
+    'DetectorPixelSize': float,
+    'CtfFigureOfMerit': float,
+    'Magnification': float,
+    'OriginalName': str,
+    'CtfImage': str,
+    'NormCorrection': float,
+    'GroupName': str,
     'OriginX': float,
     'OriginY': float,
     'OriginXAngst': float,
@@ -49,6 +56,55 @@ LABELS = {
     'MaxValueProbDistribution': float,
     'AutopickFigureOfMerit': float
 }
+
+# preferred ordering of some data_optics labels
+DATA_OPTICS_LABEL_ORDER = [
+    'OpticsGroupName',
+    'OpticsGroup',
+    'MtfFileName',
+    'MicrographOriginalPixelSize',
+    'Voltage',
+    'SphericalAberration',
+    'AmplitudeContrast',
+    'ImagePixelSize',
+    'ImageSize',
+    'ImageDimensionality',
+    'BeamTiltX',
+    'BeamTiltY',
+    'CtfDataAreCtfPremultiplied'
+]
+
+# preferred ordering of some data_particles labels
+DATA_PARTICLES_LABEL_ORDER = [
+    'CoordinateX',
+    'CoordinateY',
+    'CoordinateZ',
+    'ImageName',
+    'MicrographName',
+    'OpticsGroup',
+    'CtfMaxResolution',
+    'CtfFigureOfMerit',
+    'DefocusU',
+    'DefocusV',
+    'DefocusAngle',
+    'CtfBfactor',
+    'CtfScalefactor', 
+    'PhaseShift',
+    'GroupNumber',
+    'AngleRot',
+    'AngleTilt',
+    'AnglePsi',
+    'OriginX',
+    'OriginY',
+    'OriginXAngst',
+    'OriginYAngst',
+    'ClassNumber',
+    'NormCorrection',
+    'LogLikeliContribution',
+    'MaxValueProbDistribution',
+    'NrOfSignificantSamples',
+    'RandomSubset'
+]
 
 
 def join_stars(star_list, add_filename=False):
@@ -481,6 +537,8 @@ class StarFile(object):
         return copy.deepcopy(self)
 
 
+
+
 class Particles(StarFile):
     """Class to parse Relion star file. Contains all the MetaData found
     within a file. Attributes are dynamically populated with found MetaData.
@@ -564,3 +622,36 @@ class Particles(StarFile):
                 new_particles.data_particles._labels[key]._data.extend(
                     particle_list[n].data_particles._labels[key]._data)
         return new_particles
+    
+    def relion_label_ordering(self):
+
+        # determine the labels that don't fit the mold (add them at the end)
+        unordered_data_particles_labels = np.setdiff1d(
+            self.data_particles.label_names, DATA_PARTICLES_LABEL_ORDER)
+        unordered_data_optics_labels = np.setdiff1d(
+            self.data_optics.label_names, DATA_OPTICS_LABEL_ORDER)
+
+        # reorder data particles to fit DATA_PARTICLES_LABEL_ORDER
+        n = 0
+        updated_data_particles_label_order = OrderedDict()
+        for label in DATA_PARTICLES_LABEL_ORDER:
+            if label in self.data_particles.label_names:
+                updated_data_particles_label_order[n] = label
+                n += 1
+        for label in unordered_data_particles_labels:
+            updated_data_particles_label_order[n] = label
+            n += 1
+        self.data_particles._label_order = updated_data_particles_label_order
+
+        # reorder data particles to fit DATA_OPTICS_LABEL_ORDER
+        n = 0
+        updated_data_optics_label_order = OrderedDict()
+        for label in DATA_OPTICS_LABEL_ORDER:
+            if label in self.data_optics.label_names:
+                updated_data_optics_label_order[n] = label
+                n += 1
+        for label in unordered_data_optics_labels:
+            updated_data_optics_label_order[n] = label
+            n += 1
+        self.data_optics._label_order = updated_data_optics_label_order
+        return

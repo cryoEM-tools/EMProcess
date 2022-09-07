@@ -14,9 +14,12 @@ def process_command_line(argv):
     parser.add_argument(
         '-i', '--inputs', nargs='+', type=str, help='Input star filenames.')
     parser.add_argument(
-        '-a', '--action', choices=['append','join'], default='join',
-        help='Determine if joining or appending star files. Appending is only'
-             'supported for 2 Particle star files.')
+        '-a', '--action', choices=['append','join', 'reorder'], default='join',
+        help='Determine if appending, joining, or reordering labels star files.'
+             'Appending concatenates the unique labels between 2 Particle'
+             'starfiles. Joining concatenates particle entried between multiple'
+             'starfiles with the same labels. Reordering orders the labels to'
+             'fit relion preferences.')
     parser.add_argument(
         '--add-filename-path', action='store_true',
         help='Optionally add filename as a label. Only valid for joining'
@@ -47,6 +50,10 @@ def main(argv):
         particles0 = star.Particles(input_filenames[0])
         particles1 = star.Particles(input_filenames[1])
         new_star = star.append_particles(particles0, particles1)
+    elif args.action == 'reorder':
+        assert input_filenames.shape[0] == 1
+        new_star = star.Particles(input_filenames[0])
+        new_star.relion_label_ordering()
 
     # write new starfile output
     new_star.write(args.output_name)
