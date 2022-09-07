@@ -18,11 +18,11 @@ def identify_app(argv):
         "appargs", nargs="*",
         help="Subsequent arguments to the app (add subcommand for more).")
 
-    helpstack = []
-    for h in ['--help', '-h']:
-        while h in argv and argv.index(h) != 1:
-            argv.remove(h)
-            helpstack.append(h)
+#    helpstack = []
+#    for h in ['--help', '-h']:
+#        while h in argv and argv.index(h) != 1:
+#            argv.remove(h)
+#            helpstack.append(h)
 
     args = parser.parse_args([argv[1]])
 
@@ -40,7 +40,7 @@ def identify_app(argv):
         from EMProcess.apps.star import main
 
     args.main = main
-    args.appargs.extend(helpstack)
+#    args.appargs.extend(helpstack)
 
     return args
 
