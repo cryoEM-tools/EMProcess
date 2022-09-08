@@ -3,6 +3,7 @@ import numpy as np
 import os
 import sys
 from EMProcess.formats import star
+from EMProcess.formats.csparc.particles import pull_coordinates_locations
 
 def process_command_line(argv):
 
@@ -17,7 +18,8 @@ def process_command_line(argv):
         '-a', '--action', choices=['append','join', 'reorder'], default='join',
         help='Determine if appending, joining, or reordering labels star files.'
              'Appending concatenates the unique labels between 2 Particle'
-             'starfiles. Joining concatenates particle entried between multiple'
+             'starfiles or appends coordinate info from a cryosparc passthrough'
+             'file. Joining concatenates particle entried between multiple'
              'starfiles with the same labels. Reordering orders the labels to'
              'fit relion preferences.')
     parser.add_argument(
@@ -47,9 +49,19 @@ def main(argv):
         new_star = star.join_stars(input_filenames, args.add_filename_path)
     elif args.action == 'append':
         assert input_filenames.shape[0] == 2
-        particles0 = star.Particles(input_filenames[0])
-        particles1 = star.Particles(input_filenames[1])
-        new_star = star.append_particles(particles0, particles1)
+        exts = np.array(
+            [f.split(".")[-1] for f in input_filenames])
+        if np.any(exts == 'cs'):
+            xs,ys,locs = pull_coordinates_locations(input_filenames[exts == 'cs'][0])
+            new_star = star.Particles(input_filenames[exts=='star'][0])
+            new_star.data_particles._add_label('CoordinateX', data=xs)
+            new_star.data_particles._add_label('CoordinateY', data=ys)
+            new_star.data_particles._add_label('MicrographName', data=locs)
+            new_star.relion_label_ordering()
+        else:
+            particles0 = star.Particles(input_filenames[0])
+            particles1 = star.Particles(input_filenames[1])
+            new_star = star.append_particles(particles0, particles1)
     elif args.action == 'reorder':
         assert input_filenames.shape[0] == 1
         new_star = star.Particles(input_filenames[0])

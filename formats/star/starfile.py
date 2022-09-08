@@ -192,7 +192,7 @@ def append_particles(particles0, particles1):
             l, data=particles1.data_particles._labels[l].data)
 
     return new_particles
-        
+
 
 class Label():
     """Label class
@@ -351,7 +351,11 @@ class MetaData():
 
     @property
     def _last_label_num(self):
-        return max([k for k in self._label_order.keys()])
+        if len(self._label_order) == 0:
+            last_label_num = -1
+        else:
+            last_label_num = max([k for k in self._label_order.keys()])
+        return last_label_num
     
     @property
     def _sorted_label_indices(self):
