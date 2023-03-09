@@ -261,3 +261,18 @@ def extract_from_map(
             mrc_output.update_header_from_data()
             mrc_output.update_header_stats()
     return
+
+
+def write_from_vals(output_name, vals, voxel_size, **kwargs):
+    vals = np.array(vals)
+    vals_nonzero = vals.nonzero()
+    vals_data = vals[vals_nonzero]
+    box_dims = vals.shape
+    with mrc.new(output_name, **kwargs) as mrc_output:
+            mrc_output.set_data(np.zeros(shape=(box_dims[2], box_dims[1], box_dims[0]), dtype='<f4'))
+            mrc_output.voxel_size = voxel_size
+            mrc_output.data[vals_nonzero] = vals_data
+            mrc_output.update_header_from_data()
+            mrc_output.update_header_stats()
+    return
+        
